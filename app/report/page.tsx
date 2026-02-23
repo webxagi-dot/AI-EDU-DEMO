@@ -24,16 +24,16 @@ export default function ReportPage() {
     return `hsl(${hue}, 70%, 88%)`;
   };
 
-  const chapterOptions = (() => {
-    if (!profile?.subjects?.length) return [] as string[];
+  const chapterOptions: string[] = (() => {
+    if (!profile?.subjects?.length) return [];
     const groups =
       subjectFilter === "all"
         ? profile.subjects
         : profile.subjects.filter((group: any) => group.subject === subjectFilter);
     const chapters = groups
       .flatMap((group: any) => group.items.map((item: any) => item.chapter))
-      .filter((item: any): item is string => Boolean(item));
-    return Array.from(new Set(chapters));
+      .filter((item: any): item is string => typeof item === "string" && item.length > 0);
+    return Array.from(new Set(chapters)) as string[];
   })();
 
   const displaySubjects = profile?.subjects?.length
