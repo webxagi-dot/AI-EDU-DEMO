@@ -7,6 +7,7 @@ export type KnowledgePoint = {
   grade: string;
   title: string;
   chapter: string;
+  unit?: string;
 };
 
 export type Question = {

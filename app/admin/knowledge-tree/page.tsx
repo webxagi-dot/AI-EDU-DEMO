@@ -15,6 +15,7 @@ type KnowledgePoint = {
   grade: string;
   title: string;
   chapter: string;
+  unit?: string;
 };
 
 export default function KnowledgeTreePage() {
@@ -27,12 +28,14 @@ export default function KnowledgeTreePage() {
   }, []);
 
   const tree = list.reduce((acc, kp) => {
+    const unit = kp.unit ?? "未分单元";
     if (!acc[kp.subject]) acc[kp.subject] = {};
     if (!acc[kp.subject][kp.grade]) acc[kp.subject][kp.grade] = {};
-    if (!acc[kp.subject][kp.grade][kp.chapter]) acc[kp.subject][kp.grade][kp.chapter] = [];
-    acc[kp.subject][kp.grade][kp.chapter].push(kp);
+    if (!acc[kp.subject][kp.grade][unit]) acc[kp.subject][kp.grade][unit] = {};
+    if (!acc[kp.subject][kp.grade][unit][kp.chapter]) acc[kp.subject][kp.grade][unit][kp.chapter] = [];
+    acc[kp.subject][kp.grade][unit][kp.chapter].push(kp);
     return acc;
-  }, {} as Record<string, Record<string, Record<string, KnowledgePoint[]>>>);
+  }, {} as Record<string, Record<string, Record<string, Record<string, KnowledgePoint[]>>>>);
 
   return (
     <div className="grid" style={{ gap: 18 }}>
@@ -43,20 +46,29 @@ export default function KnowledgeTreePage() {
             <div className="card" key={subject}>
               <div className="section-title">{subjectLabel[subject] ?? subject}</div>
               <div className="grid" style={{ gap: 8, marginTop: 8 }}>
-                {Object.entries(gradeMap).map(([grade, chapterMap]) => (
+                {Object.entries(gradeMap).map(([grade, unitMap]) => (
                   <div key={`${subject}-${grade}`}>
                     <div style={{ fontWeight: 600 }}>年级：{grade}</div>
                     <div className="grid" style={{ gap: 6, marginTop: 6 }}>
-                      {Object.entries(chapterMap).map(([chapter, points]) => (
-                        <div className="card" key={`${subject}-${grade}-${chapter}`}>
+                      {Object.entries(unitMap).map(([unit, chapterMap]) => (
+                        <div className="card" key={`${subject}-${grade}-${unit}`}>
                           <div className="section-title" style={{ fontSize: 14 }}>
-                            {chapter}
+                            {unit}
                           </div>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
-                            {points.map((kp) => (
-                              <span className="badge" key={kp.id}>
-                                {kp.title}
-                              </span>
+                          <div className="grid" style={{ gap: 6, marginTop: 6 }}>
+                            {Object.entries(chapterMap).map(([chapter, points]) => (
+                              <div className="card" key={`${subject}-${grade}-${unit}-${chapter}`}>
+                                <div className="section-title" style={{ fontSize: 13 }}>
+                                  {chapter}
+                                </div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+                                  {points.map((kp) => (
+                                    <span className="badge" key={kp.id}>
+                                      {kp.title}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
                             ))}
                           </div>
                         </div>

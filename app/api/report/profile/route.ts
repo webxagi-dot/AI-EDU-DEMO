@@ -27,6 +27,7 @@ export async function GET() {
         id: item.kp.id,
         title: item.kp.title,
         chapter: item.kp.chapter,
+        unit: item.kp.unit ?? "未分单元",
         grade: item.kp.grade,
         correct: item.correct,
         total: item.total,

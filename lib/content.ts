@@ -12,6 +12,7 @@ type DbKnowledgePoint = {
   grade: string;
   title: string;
   chapter: string;
+  unit: string | null;
 };
 
 type DbQuestion = {
@@ -32,7 +33,8 @@ function mapKnowledgePoint(row: DbKnowledgePoint): KnowledgePoint {
     subject: row.subject as KnowledgePoint["subject"],
     grade: row.grade,
     title: row.title,
-    chapter: row.chapter
+    chapter: row.chapter,
+    unit: row.unit ?? "未分单元"
   };
 }
 
@@ -81,17 +83,21 @@ export async function saveQuestions(list: Question[]) {
 export async function createKnowledgePoint(input: Omit<KnowledgePoint, "id">) {
   if (!isDbEnabled()) {
     const list = await getKnowledgePoints();
-    const next: KnowledgePoint = { id: `kp-${crypto.randomBytes(6).toString("hex")}`, ...input };
+    const next: KnowledgePoint = {
+      id: `kp-${crypto.randomBytes(6).toString("hex")}`,
+      unit: input.unit ?? "未分单元",
+      ...input
+    };
     list.push(next);
     await saveKnowledgePoints(list);
     return next;
   }
   const id = `kp-${crypto.randomBytes(6).toString("hex")}`;
   const row = await queryOne<DbKnowledgePoint>(
-    `INSERT INTO knowledge_points (id, subject, grade, title, chapter)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO knowledge_points (id, subject, grade, title, chapter, unit)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
-    [id, input.subject, input.grade, input.title, input.chapter]
+    [id, input.subject, input.grade, input.title, input.chapter, input.unit ?? "未分单元"]
   );
   return row ? mapKnowledgePoint(row) : null;
 }
@@ -111,10 +117,11 @@ export async function updateKnowledgePoint(id: string, input: Partial<KnowledgeP
      SET subject = COALESCE($2, subject),
          grade = COALESCE($3, grade),
          title = COALESCE($4, title),
-         chapter = COALESCE($5, chapter)
+         chapter = COALESCE($5, chapter),
+         unit = COALESCE($6, unit)
      WHERE id = $1
      RETURNING *`,
-    [id, input.subject ?? null, input.grade ?? null, input.title ?? null, input.chapter ?? null]
+    [id, input.subject ?? null, input.grade ?? null, input.title ?? null, input.chapter ?? null, input.unit ?? null]
   );
   return row ? mapKnowledgePoint(row) : null;
 }

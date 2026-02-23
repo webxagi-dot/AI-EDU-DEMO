@@ -9,16 +9,33 @@ type KnowledgePoint = {
   grade: string;
   title: string;
   chapter: string;
+  unit?: string;
 };
 
 export default function KnowledgePointsAdminPage() {
   const [list, setList] = useState<KnowledgePoint[]>([]);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ subject: "math", grade: "4", title: "", chapter: "" });
+  const [form, setForm] = useState({
+    subject: "math",
+    grade: "4",
+    unit: "",
+    title: "",
+    chapter: ""
+  });
   const [aiForm, setAiForm] = useState({ subject: "math", grade: "4", chapter: "", count: 5 });
   const [aiLoading, setAiLoading] = useState(false);
   const [aiMessage, setAiMessage] = useState<string | null>(null);
   const [aiErrors, setAiErrors] = useState<string[]>([]);
+  const [treeForm, setTreeForm] = useState({
+    subject: "math",
+    grade: "4",
+    edition: "人教版",
+    volume: "上册",
+    unitCount: 6
+  });
+  const [treeLoading, setTreeLoading] = useState(false);
+  const [treeMessage, setTreeMessage] = useState<string | null>(null);
+  const [treeErrors, setTreeErrors] = useState<string[]>([]);
 
   const chapterOptions = useMemo(() => {
     const filtered = list.filter((kp) => kp.subject === aiForm.subject && kp.grade === aiForm.grade);
@@ -88,6 +105,40 @@ export default function KnowledgePointsAdminPage() {
     load();
   }
 
+  async function handleTreeGenerate(event: React.FormEvent) {
+    event.preventDefault();
+    setTreeLoading(true);
+    setTreeMessage(null);
+    setTreeErrors([]);
+
+    const res = await fetch("/api/admin/knowledge-points/generate-tree", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subject: treeForm.subject,
+        grade: treeForm.grade,
+        edition: treeForm.edition,
+        volume: treeForm.volume,
+        unitCount: treeForm.unitCount
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      setTreeErrors([data?.error ?? "生成失败"]);
+      setTreeLoading(false);
+      return;
+    }
+
+    const skipped = data.skipped ?? [];
+    if (skipped.length) {
+      setTreeErrors(skipped.slice(0, 5).map((item: any) => `第 ${item.index + 1} 条：${item.reason}`));
+    }
+    setTreeMessage(`已生成 ${data.created?.length ?? 0} 条知识点。`);
+    setTreeLoading(false);
+    load();
+  }
+
   async function handleDelete(id: string) {
     await fetch(`/api/admin/knowledge-points/${id}`, { method: "DELETE" });
     load();
@@ -95,6 +146,75 @@ export default function KnowledgePointsAdminPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
+      <Card title="AI 生成知识点树（整本书）">
+        <p style={{ color: "var(--ink-1)", fontSize: 13 }}>
+          按“单元 → 章节 → 知识点”生成整本书结构（建议先执行该功能）。
+        </p>
+        <form onSubmit={handleTreeGenerate} style={{ display: "grid", gap: 12, marginTop: 12 }}>
+          <label>
+            <div className="section-title">学科</div>
+            <select
+              value={treeForm.subject}
+              onChange={(event) => setTreeForm({ ...treeForm, subject: event.target.value })}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            >
+              <option value="math">数学</option>
+              <option value="chinese">语文</option>
+              <option value="english">英语</option>
+            </select>
+          </label>
+          <label>
+            <div className="section-title">年级</div>
+            <input
+              value={treeForm.grade}
+              onChange={(event) => setTreeForm({ ...treeForm, grade: event.target.value })}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            />
+          </label>
+          <label>
+            <div className="section-title">教材版本</div>
+            <input
+              value={treeForm.edition}
+              onChange={(event) => setTreeForm({ ...treeForm, edition: event.target.value })}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            />
+          </label>
+          <label>
+            <div className="section-title">册次</div>
+            <select
+              value={treeForm.volume}
+              onChange={(event) => setTreeForm({ ...treeForm, volume: event.target.value })}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            >
+              <option value="上册">上册</option>
+              <option value="下册">下册</option>
+              <option value="全册">全册</option>
+            </select>
+          </label>
+          <label>
+            <div className="section-title">单元数量（1-12）</div>
+            <input
+              type="number"
+              min={1}
+              max={12}
+              value={treeForm.unitCount}
+              onChange={(event) => setTreeForm({ ...treeForm, unitCount: Number(event.target.value) })}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            />
+          </label>
+          <button className="button primary" type="submit" disabled={treeLoading}>
+            {treeLoading ? "生成中..." : "生成知识点树"}
+          </button>
+        </form>
+        {treeMessage ? <div style={{ marginTop: 8 }}>{treeMessage}</div> : null}
+        {treeErrors.length ? (
+          <div style={{ marginTop: 8, color: "#b42318", fontSize: 13 }}>
+            {treeErrors.map((err) => (
+              <div key={err}>{err}</div>
+            ))}
+          </div>
+        ) : null}
+      </Card>
       <Card title="AI 生成知识点">
         <p style={{ color: "var(--ink-1)", fontSize: 13 }}>
           需要配置 LLM（如智谱），系统会按学科/年级生成知识点。
@@ -182,6 +302,15 @@ export default function KnowledgePointsAdminPage() {
             />
           </label>
           <label>
+            <div className="section-title">单元</div>
+            <input
+              value={form.unit}
+              onChange={(event) => setForm({ ...form, unit: event.target.value })}
+              placeholder="如：第一单元"
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            />
+          </label>
+          <label>
             <div className="section-title">知识点名称</div>
             <input
               value={form.title}
@@ -211,7 +340,7 @@ export default function KnowledgePointsAdminPage() {
               <div>
                 <div className="section-title">{item.title}</div>
                 <div style={{ fontSize: 12, color: "var(--ink-1)" }}>
-                  {item.subject} · {item.grade} 年级 · {item.chapter}
+                  {item.subject} · {item.grade} 年级 · {item.unit ?? "未分单元"} · {item.chapter}
                 </div>
               </div>
               <button className="button secondary" onClick={() => handleDelete(item.id)}>

@@ -62,14 +62,15 @@ try {
 
   for (const kp of knowledgePoints) {
     await client.query(
-      `INSERT INTO knowledge_points (id, subject, grade, title, chapter)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO knowledge_points (id, subject, grade, title, chapter, unit)
+       VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (id) DO UPDATE SET
         subject = EXCLUDED.subject,
         grade = EXCLUDED.grade,
         title = EXCLUDED.title,
-        chapter = EXCLUDED.chapter`,
-      [kp.id, kp.subject, kp.grade, kp.title, kp.chapter]
+        chapter = EXCLUDED.chapter,
+        unit = EXCLUDED.unit`,
+      [kp.id, kp.subject, kp.grade, kp.title, kp.chapter, kp.unit ?? "未分单元"]
     );
   }
 

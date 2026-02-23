@@ -15,6 +15,7 @@ export async function PATCH(request: Request, context: { params: { id: string } 
     grade?: string;
     title?: string;
     chapter?: string;
+    unit?: string;
   };
 
   const next = await updateKnowledgePoint(context.params.id, body as any);
@@ -27,7 +28,7 @@ export async function PATCH(request: Request, context: { params: { id: string } 
     action: "update_knowledge_point",
     entityType: "knowledge_point",
     entityId: next.id,
-    detail: `${next.subject} ${next.grade} ${next.title}`
+    detail: `${next.subject} ${next.grade} ${next.unit ?? "未分单元"} ${next.title}`
   });
 
   return NextResponse.json({ data: next });

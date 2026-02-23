@@ -31,8 +31,11 @@ CREATE TABLE IF NOT EXISTS knowledge_points (
   subject TEXT NOT NULL,
   grade TEXT NOT NULL,
   title TEXT NOT NULL,
-  chapter TEXT NOT NULL
+  chapter TEXT NOT NULL,
+  unit TEXT DEFAULT '未分单元'
 );
+
+ALTER TABLE knowledge_points ADD COLUMN IF NOT EXISTS unit TEXT;
 
 CREATE TABLE IF NOT EXISTS questions (
   id TEXT PRIMARY KEY,

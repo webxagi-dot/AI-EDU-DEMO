@@ -26,6 +26,16 @@ export type KnowledgePointDraft = {
   chapter: string;
 };
 
+export type KnowledgeTreeDraft = {
+  units: {
+    title: string;
+    chapters: {
+      title: string;
+      points: { title: string }[];
+    }[];
+  }[];
+};
+
 export type GenerateQuestionPayload = {
   subject: string;
   grade: string;
@@ -39,6 +49,14 @@ export type GenerateKnowledgePointsPayload = {
   grade: string;
   chapter?: string;
   count?: number;
+};
+
+export type GenerateKnowledgeTreePayload = {
+  subject: string;
+  grade: string;
+  edition?: string;
+  volume?: string;
+  unitCount?: number;
 };
 
 const SYSTEM_PROMPT =
@@ -248,6 +266,68 @@ export async function generateKnowledgePointsDraft(payload: GenerateKnowledgePoi
   }
 
   return items.length ? items : null;
+}
+
+export async function generateKnowledgeTreeDraft(payload: GenerateKnowledgeTreePayload) {
+  const provider = process.env.LLM_PROVIDER ?? "mock";
+  if (provider === "mock") return null;
+
+  const unitCount = Math.min(Math.max(Number(payload.unitCount) || 6, 1), 12);
+  const edition = payload.edition ?? "人教版";
+  const volume = payload.volume ?? "上册";
+
+  const context = [
+    `学科：${payload.subject}`,
+    `年级：${payload.grade}`,
+    `教材版本：${edition}`,
+    `册次：${volume}`
+  ].join("\n");
+
+  const userPrompt = `${context}\n请输出整本书的知识点树，按“单元->章节->知识点”分层，返回 JSON：{\"units\":[{\"title\":\"第一单元\",\"chapters\":[{\"title\":\"...\",\"points\":[{\"title\":\"...\"}]}]}]}。\n单元数量大约 ${unitCount} 个，每个单元 1-3 章，每章 3-6 个知识点。不要输出多余文本。`;
+
+  let text: string | null = null;
+  if (provider === "zhipu" || provider === "compatible") {
+    text = await callZhipuLLM([
+      { role: "system", content: GENERATE_PROMPT },
+      { role: "user", content: userPrompt }
+    ]);
+  } else if (provider === "custom") {
+    text = await callCustomLLM(`${GENERATE_PROMPT}\n${userPrompt}`);
+  }
+
+  if (!text) return null;
+  const parsed = extractJson(text);
+  if (!parsed) return null;
+
+  const rawUnits = Array.isArray(parsed.units) ? parsed.units : Array.isArray(parsed) ? parsed : [];
+  if (!rawUnits.length) return null;
+
+  const units: KnowledgeTreeDraft["units"] = [];
+
+  for (const rawUnit of rawUnits) {
+    const unitTitle = normalizeTitle(String(rawUnit?.title ?? "")).trim();
+    if (!unitTitle) continue;
+    const rawChapters = Array.isArray(rawUnit?.chapters) ? rawUnit.chapters : [];
+    const chapters: KnowledgeTreeDraft["units"][number]["chapters"] = [];
+
+    for (const rawChapter of rawChapters) {
+      const chapterTitle = normalizeTitle(String(rawChapter?.title ?? "")).trim();
+      if (!chapterTitle) continue;
+      const rawPoints = Array.isArray(rawChapter?.points) ? rawChapter.points : [];
+      const points = rawPoints
+        .map((point: any) => ({ title: normalizeTitle(String(point?.title ?? "")).trim() }))
+        .filter((point: any) => point.title);
+
+      if (!points.length) continue;
+      chapters.push({ title: chapterTitle, points });
+    }
+
+    if (!chapters.length) continue;
+    units.push({ title: unitTitle, chapters });
+    if (units.length >= unitCount) break;
+  }
+
+  return units.length ? { units } : null;
 }
 
 export async function generateAssistAnswer(payload: AssistPayload): Promise<AssistResponse> {

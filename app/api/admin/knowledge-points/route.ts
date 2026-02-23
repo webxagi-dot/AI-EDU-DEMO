@@ -26,6 +26,7 @@ export async function POST(request: Request) {
     grade?: string;
     title?: string;
     chapter?: string;
+    unit?: string;
   };
 
   if (!body.subject || !body.grade || !body.title || !body.chapter) {
@@ -39,7 +40,8 @@ export async function POST(request: Request) {
     subject: body.subject as Subject,
     grade: body.grade,
     title: body.title,
-    chapter: body.chapter
+    chapter: body.chapter,
+    unit: body.unit && body.unit.trim().length ? body.unit.trim() : "未分单元"
   });
 
   if (next) {
@@ -48,7 +50,7 @@ export async function POST(request: Request) {
       action: "create_knowledge_point",
       entityType: "knowledge_point",
       entityId: next.id,
-      detail: `${next.subject} ${next.grade} ${next.title}`
+      detail: `${next.subject} ${next.grade} ${next.unit ?? "未分单元"} ${next.title}`
     });
   }
 
