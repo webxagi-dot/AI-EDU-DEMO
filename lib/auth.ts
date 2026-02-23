@@ -233,6 +233,15 @@ export async function getUserByEmail(email: string) {
   return row ? mapUser(row) : null;
 }
 
+export async function getAdminCount() {
+  if (!isDbEnabled()) {
+    const users = await getUsers();
+    return users.filter((user) => user.role === "admin").length;
+  }
+  const row = await queryOne<{ count: string }>("SELECT COUNT(*) as count FROM users WHERE role = 'admin'");
+  return Number(row?.count ?? 0);
+}
+
 export function getSessionCookieName() {
   return SESSION_COOKIE;
 }
