@@ -21,12 +21,24 @@ export type QuestionDraft = {
   explanation: string;
 };
 
+export type KnowledgePointDraft = {
+  title: string;
+  chapter: string;
+};
+
 export type GenerateQuestionPayload = {
   subject: string;
   grade: string;
   knowledgePointTitle: string;
   chapter?: string;
   difficulty?: "easy" | "medium" | "hard";
+};
+
+export type GenerateKnowledgePointsPayload = {
+  subject: string;
+  grade: string;
+  chapter?: string;
+  count?: number;
 };
 
 const SYSTEM_PROMPT =
@@ -116,6 +128,13 @@ function normalizeOption(text: string) {
     .trim();
 }
 
+function normalizeTitle(text: string) {
+  return text
+    .replace(/^\\d+[\\.、\\)]\\s*/, "")
+    .replace(/^第[一二三四五六七八九十]+[单元章节]\\s*/, "")
+    .trim();
+}
+
 function normalizeDraft(input: any): QuestionDraft | null {
   if (!input || typeof input !== "object") return null;
   const stem = String(input.stem ?? "").trim();
@@ -180,6 +199,55 @@ export async function generateQuestionDraft(payload: GenerateQuestionPayload) {
   if (!text) return null;
   const parsed = extractJson(text);
   return normalizeDraft(parsed);
+}
+
+export async function generateKnowledgePointsDraft(payload: GenerateKnowledgePointsPayload) {
+  const provider = process.env.LLM_PROVIDER ?? "mock";
+  if (provider === "mock") return null;
+
+  const count = Math.min(Math.max(Number(payload.count) || 5, 1), 10);
+  const context = [
+    `学科：${payload.subject}`,
+    `年级：${payload.grade}`,
+    payload.chapter ? `章节：${payload.chapter}` : ""
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const userPrompt = `${context}\n请生成 ${count} 个知识点名称，返回 JSON。格式: {\"items\":[{\"title\":\"...\",\"chapter\":\"...\"}]}。\n要求: title 简洁准确，chapter 如果已提供则使用，否则给出合理章节名。不要输出多余文本。`;
+
+  let text: string | null = null;
+  if (provider === "zhipu" || provider === "compatible") {
+    text = await callZhipuLLM([
+      { role: "system", content: GENERATE_PROMPT },
+      { role: "user", content: userPrompt }
+    ]);
+  } else if (provider === "custom") {
+    text = await callCustomLLM(`${GENERATE_PROMPT}\n${userPrompt}`);
+  }
+
+  if (!text) return null;
+  const parsed = extractJson(text);
+  if (!parsed) return null;
+
+  const rawItems = Array.isArray(parsed) ? parsed : Array.isArray(parsed.items) ? parsed.items : [];
+  if (!rawItems.length) return null;
+
+  const seen = new Set<string>();
+  const items: KnowledgePointDraft[] = [];
+
+  for (const item of rawItems) {
+    const title = normalizeTitle(String(item?.title ?? "")).trim();
+    const chapter = String(item?.chapter ?? payload.chapter ?? "未归类").trim();
+    if (!title) continue;
+    const key = `${title}|${chapter}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    items.push({ title, chapter });
+    if (items.length >= count) break;
+  }
+
+  return items.length ? items : null;
 }
 
 export async function generateAssistAnswer(payload: AssistPayload): Promise<AssistResponse> {
