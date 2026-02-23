@@ -117,7 +117,7 @@ export async function addCorrectionTasks(params: {
         task.status,
         task.dueDate,
         task.createdAt,
-        task.completedAt
+        task.completedAt ?? null
       ]
     );
 
