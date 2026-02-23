@@ -75,8 +75,8 @@ try {
 
   for (const question of questions) {
     await client.query(
-      `INSERT INTO questions (id, subject, grade, knowledge_point_id, stem, options, answer, explanation)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO questions (id, subject, grade, knowledge_point_id, stem, options, answer, explanation, difficulty)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        ON CONFLICT (id) DO UPDATE SET
         subject = EXCLUDED.subject,
         grade = EXCLUDED.grade,
@@ -84,7 +84,8 @@ try {
         stem = EXCLUDED.stem,
         options = EXCLUDED.options,
         answer = EXCLUDED.answer,
-        explanation = EXCLUDED.explanation`,
+        explanation = EXCLUDED.explanation,
+        difficulty = EXCLUDED.difficulty`,
       [
         question.id,
         question.subject,
@@ -93,7 +94,8 @@ try {
         question.stem,
         question.options,
         question.answer,
-        question.explanation ?? ""
+        question.explanation ?? "",
+        question.difficulty ?? "medium"
       ]
     );
   }

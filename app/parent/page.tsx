@@ -6,11 +6,20 @@ import Stat from "@/components/Stat";
 
 export default function ParentPage() {
   const [report, setReport] = useState<any>(null);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [summary, setSummary] = useState<any>(null);
+  const [reminderCopied, setReminderCopied] = useState(false);
 
   useEffect(() => {
     fetch("/api/report/weekly")
       .then((res) => res.json())
       .then((data) => setReport(data));
+    fetch("/api/corrections")
+      .then((res) => res.json())
+      .then((data) => {
+        setTasks(data.data ?? []);
+        setSummary(data.summary ?? null);
+      });
   }, []);
 
   if (!report) {
@@ -20,6 +29,21 @@ export default function ParentPage() {
   if (report.error) {
     return <Card title="家长周报">请先登录家长账号。</Card>;
   }
+
+  const pendingTasks = tasks.filter((task) => task.status === "pending");
+  const dueSoonTasks = pendingTasks.filter((task) => {
+    const diff = new Date(task.dueDate).getTime() - Date.now();
+    return diff >= 0 && diff <= 2 * 24 * 60 * 60 * 1000;
+  });
+  const overdueTasks = pendingTasks.filter((task) => new Date(task.dueDate).getTime() < Date.now());
+  const reminderText = [
+    `本周订正任务：待完成 ${summary?.pending ?? pendingTasks.length} 题。`,
+    overdueTasks.length ? `已逾期 ${overdueTasks.length} 题，请尽快完成。` : "",
+    dueSoonTasks.length ? `近 2 天到期 ${dueSoonTasks.length} 题。` : "",
+    ...dueSoonTasks.slice(0, 3).map((task) => `- ${task.question?.stem ?? "题目"}（截止 ${new Date(task.dueDate).toLocaleDateString("zh-CN")}）`)
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   return (
     <div className="grid" style={{ gap: 18 }}>
@@ -63,6 +87,47 @@ export default function ParentPage() {
             </div>
           </div>
         ) : null}
+      </Card>
+      <Card title="订正任务提醒">
+        <div className="grid grid-2">
+          <div className="card">
+            <div className="section-title">待订正</div>
+            <p>{summary?.pending ?? pendingTasks.length} 题</p>
+          </div>
+          <div className="card">
+            <div className="section-title">逾期</div>
+            <p>{summary?.overdue ?? overdueTasks.length} 题</p>
+          </div>
+          <div className="card">
+            <div className="section-title">2 天内到期</div>
+            <p>{summary?.dueSoon ?? dueSoonTasks.length} 题</p>
+          </div>
+          <div className="card">
+            <div className="section-title">已完成</div>
+            <p>{summary?.completed ?? 0} 题</p>
+          </div>
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <div className="section-title">提醒文案</div>
+          <pre style={{ whiteSpace: "pre-wrap", fontSize: 12, color: "var(--ink-1)" }}>{reminderText}</pre>
+        </div>
+        <div className="cta-row">
+          <button
+            className="button secondary"
+            type="button"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(reminderText);
+                setReminderCopied(true);
+                setTimeout(() => setReminderCopied(false), 2000);
+              } catch {
+                setReminderCopied(false);
+              }
+            }}
+          >
+            {reminderCopied ? "已复制" : "复制提醒文案"}
+          </button>
+        </div>
       </Card>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Card from "@/components/Card";
 
 type KnowledgePoint = {
@@ -20,6 +20,13 @@ type Question = {
   options: string[];
   answer: string;
   explanation: string;
+  difficulty?: string;
+};
+
+const difficultyLabel: Record<string, string> = {
+  easy: "简单",
+  medium: "适中",
+  hard: "困难"
 };
 
 export default function QuestionsAdminPage() {
@@ -35,17 +42,34 @@ export default function QuestionsAdminPage() {
     stem: "",
     options: "",
     answer: "",
-    explanation: ""
+    explanation: "",
+    difficulty: "medium"
   });
   const [aiForm, setAiForm] = useState({
     subject: "math",
     grade: "4",
     knowledgePointId: "",
-    count: 1
+    count: 1,
+    difficulty: "medium",
+    mode: "single",
+    chapter: ""
   });
   const [aiLoading, setAiLoading] = useState(false);
   const [aiMessage, setAiMessage] = useState<string | null>(null);
   const [aiErrors, setAiErrors] = useState<string[]>([]);
+
+  const chapterOptions = useMemo(() => {
+    const filtered = knowledgePoints.filter(
+      (kp) => kp.subject === aiForm.subject && kp.grade === aiForm.grade
+    );
+    const chapters = filtered.map((kp) => kp.chapter).filter(Boolean);
+    return Array.from(new Set(chapters));
+  }, [knowledgePoints, aiForm.subject, aiForm.grade]);
+
+  const aiKnowledgePoints = useMemo(
+    () => knowledgePoints.filter((kp) => kp.subject === aiForm.subject && kp.grade === aiForm.grade),
+    [knowledgePoints, aiForm.subject, aiForm.grade]
+  );
 
   async function load() {
     setLoading(true);
@@ -68,10 +92,19 @@ export default function QuestionsAdminPage() {
     if (knowledgePoints.length && !form.knowledgePointId) {
       setForm((prev) => ({ ...prev, knowledgePointId: knowledgePoints[0].id }));
     }
-    if (knowledgePoints.length && !aiForm.knowledgePointId) {
-      setAiForm((prev) => ({ ...prev, knowledgePointId: knowledgePoints[0].id }));
+    if (aiKnowledgePoints.length && !aiForm.knowledgePointId) {
+      setAiForm((prev) => ({ ...prev, knowledgePointId: aiKnowledgePoints[0].id }));
     }
-  }, [knowledgePoints, form.knowledgePointId, aiForm.knowledgePointId]);
+    if (aiForm.knowledgePointId && !aiKnowledgePoints.find((kp) => kp.id === aiForm.knowledgePointId)) {
+      setAiForm((prev) => ({ ...prev, knowledgePointId: aiKnowledgePoints[0]?.id ?? "" }));
+    }
+  }, [knowledgePoints, form.knowledgePointId, aiForm.knowledgePointId, aiKnowledgePoints]);
+
+  useEffect(() => {
+    if (aiForm.mode === "batch" && chapterOptions.length && !aiForm.chapter) {
+      setAiForm((prev) => ({ ...prev, chapter: chapterOptions[0] }));
+    }
+  }, [aiForm.mode, aiForm.chapter, chapterOptions]);
 
   function parseCsv(text: string) {
     const rows: string[][] = [];
@@ -118,7 +151,8 @@ export default function QuestionsAdminPage() {
       "stem",
       "options",
       "answer",
-      "explanation"
+      "explanation",
+      "difficulty"
     ];
     const sample = [
       "math",
@@ -128,7 +162,8 @@ export default function QuestionsAdminPage() {
       "把一个披萨平均分成 8 份，小明吃了 3 份，吃了几分之几？",
       "1/8|3/8|3/5|8/3",
       "3/8",
-      "平均分成 8 份，每份是 1/8，吃了 3 份就是 3/8。"
+      "平均分成 8 份，每份是 1/8，吃了 3 份就是 3/8。",
+      "medium"
     ];
     const csv = `${header.join(",")}\n${sample.map((item) => `\"${item}\"`).join(",")}\n`;
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -181,7 +216,8 @@ export default function QuestionsAdminPage() {
         stem: record.stem,
         options,
         answer: record.answer,
-        explanation: record.explanation
+        explanation: record.explanation,
+        difficulty: record.difficulty
       });
     }
 
@@ -211,15 +247,31 @@ export default function QuestionsAdminPage() {
     setAiErrors([]);
     setAiLoading(true);
 
-    const res = await fetch("/api/admin/questions/generate", {
+    const endpoint =
+      aiForm.mode === "batch" ? "/api/admin/questions/generate-batch" : "/api/admin/questions/generate";
+
+    const count = aiForm.mode === "batch" ? Math.max(aiForm.count, 10) : aiForm.count;
+    const payload =
+      aiForm.mode === "batch"
+        ? {
+            subject: aiForm.subject,
+            grade: aiForm.grade,
+            count,
+            chapter: aiForm.chapter || undefined,
+            difficulty: aiForm.difficulty
+          }
+        : {
+            subject: aiForm.subject,
+            grade: aiForm.grade,
+            knowledgePointId: aiForm.knowledgePointId,
+            count,
+            difficulty: aiForm.difficulty
+          };
+
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        subject: aiForm.subject,
-        grade: aiForm.grade,
-        knowledgePointId: aiForm.knowledgePointId,
-        count: aiForm.count
-      })
+      body: JSON.stringify(payload)
     });
 
     const data = await res.json();
@@ -255,7 +307,8 @@ export default function QuestionsAdminPage() {
         stem: form.stem,
         options,
         answer: form.answer,
-        explanation: form.explanation
+        explanation: form.explanation,
+        difficulty: form.difficulty
       })
     });
 
@@ -266,7 +319,8 @@ export default function QuestionsAdminPage() {
       stem: "",
       options: "",
       answer: "",
-      explanation: ""
+      explanation: "",
+      difficulty: form.difficulty
     });
     load();
   }
@@ -311,6 +365,17 @@ export default function QuestionsAdminPage() {
         </p>
         <form onSubmit={handleGenerate} style={{ display: "grid", gap: 12, marginTop: 12 }}>
           <label>
+            <div className="section-title">生成模式</div>
+            <select
+              value={aiForm.mode}
+              onChange={(event) => setAiForm({ ...aiForm, mode: event.target.value })}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            >
+              <option value="single">单知识点生成</option>
+              <option value="batch">批量生成（按知识点分配）</option>
+            </select>
+          </label>
+          <label>
             <div className="section-title">学科</div>
             <select
               value={aiForm.subject}
@@ -330,26 +395,58 @@ export default function QuestionsAdminPage() {
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
             />
           </label>
+          {aiForm.mode === "single" ? (
+            <label>
+              <div className="section-title">知识点</div>
+              <select
+                value={aiForm.knowledgePointId}
+                onChange={(event) => setAiForm({ ...aiForm, knowledgePointId: event.target.value })}
+                style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+              >
+                {aiKnowledgePoints.map((kp) => (
+                  <option value={kp.id} key={kp.id}>
+                    {kp.title} ({kp.grade}年级)
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <label>
+              <div className="section-title">章节筛选（可选）</div>
+              <select
+                value={aiForm.chapter}
+                onChange={(event) => setAiForm({ ...aiForm, chapter: event.target.value })}
+                style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+              >
+                {chapterOptions.length === 0 ? <option value="">暂无章节</option> : null}
+                {chapterOptions.map((chapter) => (
+                  <option value={chapter} key={chapter}>
+                    {chapter}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <label>
-            <div className="section-title">知识点</div>
+            <div className="section-title">难度</div>
             <select
-              value={aiForm.knowledgePointId}
-              onChange={(event) => setAiForm({ ...aiForm, knowledgePointId: event.target.value })}
+              value={aiForm.difficulty}
+              onChange={(event) => setAiForm({ ...aiForm, difficulty: event.target.value })}
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
             >
-              {knowledgePoints.map((kp) => (
-                <option value={kp.id} key={kp.id}>
-                  {kp.title} ({kp.grade}年级)
-                </option>
-              ))}
+              <option value="easy">简单</option>
+              <option value="medium">适中</option>
+              <option value="hard">困难</option>
             </select>
           </label>
           <label>
-            <div className="section-title">生成题量（1-5）</div>
+            <div className="section-title">
+              生成题量（{aiForm.mode === "single" ? "1-5" : "10-50"}）
+            </div>
             <input
               type="number"
-              min={1}
-              max={5}
+              min={aiForm.mode === "single" ? 1 : 10}
+              max={aiForm.mode === "single" ? 5 : 50}
               value={aiForm.count}
               onChange={(event) => setAiForm({ ...aiForm, count: Number(event.target.value) })}
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
@@ -405,6 +502,18 @@ export default function QuestionsAdminPage() {
             </select>
           </label>
           <label>
+            <div className="section-title">难度</div>
+            <select
+              value={form.difficulty}
+              onChange={(event) => setForm({ ...form, difficulty: event.target.value })}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            >
+              <option value="easy">简单</option>
+              <option value="medium">适中</option>
+              <option value="hard">困难</option>
+            </select>
+          </label>
+          <label>
             <div className="section-title">题干</div>
             <textarea
               value={form.stem}
@@ -452,7 +561,8 @@ export default function QuestionsAdminPage() {
             <div className="card" key={item.id}>
               <div className="section-title">{item.stem}</div>
               <div style={{ fontSize: 12, color: "var(--ink-1)" }}>
-                {item.subject} · {item.grade} 年级 · 选项 {item.options.length} 个
+                {item.subject} · {item.grade} 年级 · 难度{" "}
+                {difficultyLabel[item.difficulty ?? "medium"] ?? item.difficulty ?? "中"} · 选项 {item.options.length} 个
               </div>
               <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
                 <div className="badge">答案：{item.answer}</div>

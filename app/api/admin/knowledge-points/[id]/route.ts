@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { deleteKnowledgePoint, updateKnowledgePoint } from "@/lib/content";
 import { requireRole } from "@/lib/guard";
+import { addAdminLog } from "@/lib/admin-log";
 export const dynamic = "force-dynamic";
 
 export async function PATCH(request: Request, context: { params: { id: string } }) {
@@ -21,6 +22,14 @@ export async function PATCH(request: Request, context: { params: { id: string } 
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
 
+  await addAdminLog({
+    adminId: user.id,
+    action: "update_knowledge_point",
+    entityType: "knowledge_point",
+    entityId: next.id,
+    detail: `${next.subject} ${next.grade} ${next.title}`
+  });
+
   return NextResponse.json({ data: next });
 }
 
@@ -34,6 +43,14 @@ export async function DELETE(_: Request, context: { params: { id: string } }) {
   if (!ok) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
+
+  await addAdminLog({
+    adminId: user.id,
+    action: "delete_knowledge_point",
+    entityType: "knowledge_point",
+    entityId: context.params.id,
+    detail: ""
+  });
 
   return NextResponse.json({ ok: true });
 }

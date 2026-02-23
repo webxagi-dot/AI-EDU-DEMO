@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSession, getUserByEmail, setSessionCookie, verifyPassword } from "@/lib/auth";
+import { addAdminLog } from "@/lib/admin-log";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
@@ -16,5 +17,16 @@ export async function POST(request: Request) {
   const session = await createSession(user);
   const response = NextResponse.json({ ok: true, role: user.role, name: user.name });
   setSessionCookie(response, session.id);
+
+  if (user.role === "admin") {
+    await addAdminLog({
+      adminId: user.id,
+      action: "admin_login",
+      entityType: "auth",
+      entityId: user.id,
+      detail: user.email
+    });
+  }
+
   return response;
 }

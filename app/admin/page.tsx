@@ -22,6 +22,12 @@ export default function AdminPage() {
       <Card title="学生概览">
         <p>本周活跃 128 人，完成诊断 72 人。</p>
       </Card>
+      <Card title="操作日志">
+        <p>查看管理员操作记录与关键变更。</p>
+        <Link className="button secondary" href="/admin/logs" style={{ marginTop: 12 }}>
+          查看日志
+        </Link>
+      </Card>
     </div>
   );
 }

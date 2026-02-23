@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createQuestion } from "@/lib/content";
 import { requireRole } from "@/lib/guard";
+import { addAdminLog } from "@/lib/admin-log";
+import type { Difficulty } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
@@ -18,6 +20,7 @@ export async function POST(request: Request) {
       options?: string[];
       answer?: string;
       explanation?: string;
+      difficulty?: Difficulty;
     }[];
   };
 
@@ -40,10 +43,19 @@ export async function POST(request: Request) {
       stem: item.stem,
       options: item.options,
       answer: item.answer,
-      explanation: item.explanation ?? ""
+      explanation: item.explanation ?? "",
+      difficulty: item.difficulty ?? "medium"
     });
     if (next?.id) created.push(next.id);
   }
+
+  await addAdminLog({
+    adminId: user.id,
+    action: "import_questions",
+    entityType: "question",
+    entityId: null,
+    detail: `created=${created.length}, failed=${failed.length}`
+  });
 
   return NextResponse.json({ created: created.length, failed });
 }

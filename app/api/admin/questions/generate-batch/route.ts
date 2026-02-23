@@ -16,6 +16,15 @@ function normalizeStem(text: string) {
     .replace(/[，。！？,.!?;:；：、]/g, "");
 }
 
+function shuffle<T>(arr: T[]) {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
 export async function POST(request: Request) {
   const user = await requireRole("admin");
   if (!user) {
@@ -25,42 +34,51 @@ export async function POST(request: Request) {
   const body = (await request.json()) as {
     subject?: string;
     grade?: string;
-    knowledgePointId?: string;
     count?: number;
+    chapter?: string;
     difficulty?: Difficulty;
   };
 
-  if (!body.subject || !body.grade || !body.knowledgePointId) {
+  if (!body.subject || !body.grade) {
     return NextResponse.json({ error: "missing fields" }, { status: 400 });
   }
+
   if (!ALLOWED_SUBJECTS.includes(body.subject as Subject)) {
     return NextResponse.json({ error: "invalid subject" }, { status: 400 });
   }
+
   const subject = body.subject as Subject;
   const difficulty = ALLOWED_DIFFICULTY.includes(body.difficulty as Difficulty)
     ? (body.difficulty as Difficulty)
     : "medium";
 
-  const kp = (await getKnowledgePoints()).find((item) => item.id === body.knowledgePointId);
-  if (!kp) {
-    return NextResponse.json({ error: "knowledge point not found" }, { status: 404 });
-  }
-  if (kp.subject !== subject) {
-    return NextResponse.json({ error: "knowledge point mismatch" }, { status: 400 });
+  const allKps = await getKnowledgePoints();
+  const available = allKps.filter((kp) => {
+    if (kp.subject !== subject) return false;
+    if (kp.grade !== body.grade) return false;
+    if (body.chapter && kp.chapter !== body.chapter) return false;
+    return true;
+  });
+
+  if (!available.length) {
+    return NextResponse.json({ error: "no knowledge points" }, { status: 400 });
   }
 
-  const total = Math.min(Math.max(Number(body.count) || 1, 1), 5);
-  const existing = (await getQuestions()).filter(
-    (q) => q.subject === subject && q.grade === body.grade && q.knowledgePointId === body.knowledgePointId
-  );
+  const total = Math.min(Math.max(Number(body.count) || 10, 10), 50);
+  const kpList = shuffle(available);
+
+  const existing = (await getQuestions()).filter((q) => q.subject === subject && q.grade === body.grade);
   const existingStems = new Set(existing.map((q) => normalizeStem(q.stem)));
   const createdStems = new Set<string>();
+
   const created: any[] = [];
   const failed: { index: number; reason: string }[] = [];
 
   for (let i = 0; i < total; i += 1) {
+    const kp = kpList[i % kpList.length];
     let draft = null;
     let attempts = 0;
+
     while (!draft && attempts < 3) {
       attempts += 1;
       const next = await generateQuestionDraft({
@@ -80,14 +98,14 @@ export async function POST(request: Request) {
     }
 
     if (!draft) {
-      failed.push({ index: i, reason: "AI 生成失败，请检查模型配置" });
+      failed.push({ index: i, reason: "AI 生成失败" });
       continue;
     }
 
     const next = await createQuestion({
       subject,
       grade: body.grade,
-      knowledgePointId: body.knowledgePointId,
+      knowledgePointId: kp.id,
       stem: draft.stem,
       options: draft.options,
       answer: draft.answer,
@@ -99,12 +117,13 @@ export async function POST(request: Request) {
       failed.push({ index: i, reason: "保存题目失败" });
       continue;
     }
+
     created.push(next);
   }
 
   await addAdminLog({
     adminId: user.id,
-    action: "ai_generate_questions",
+    action: "ai_generate_batch",
     entityType: "question",
     entityId: null,
     detail: `count=${total}, created=${created.length}, failed=${failed.length}`

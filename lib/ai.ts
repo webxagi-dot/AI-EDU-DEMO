@@ -26,6 +26,7 @@ export type GenerateQuestionPayload = {
   grade: string;
   knowledgePointTitle: string;
   chapter?: string;
+  difficulty?: "easy" | "medium" | "hard";
 };
 
 const SYSTEM_PROMPT =
@@ -108,15 +109,29 @@ function extractJson(text: string) {
   }
 }
 
+function normalizeOption(text: string) {
+  return text
+    .replace(/^[A-Da-d][\\.、\\)）:：]\\s*/, "")
+    .replace(/^选项\\s*[A-Da-d]\\s*[:：]/, "")
+    .trim();
+}
+
 function normalizeDraft(input: any): QuestionDraft | null {
   if (!input || typeof input !== "object") return null;
   const stem = String(input.stem ?? "").trim();
   const explanation = String(input.explanation ?? "").trim();
   const rawOptions = Array.isArray(input.options) ? input.options : [];
-  const options = rawOptions.map((item: any) => String(item).trim()).filter(Boolean);
-  if (!stem || !explanation || options.length < 3) return null;
+  const options = rawOptions
+    .map((item: any) => normalizeOption(String(item)))
+    .filter(Boolean);
+  if (!stem || !explanation || options.length < 4) return null;
 
-  const normalizedOptions = options.slice(0, 4);
+  const uniqueOptions: string[] = [];
+  options.forEach((opt) => {
+    if (!uniqueOptions.includes(opt)) uniqueOptions.push(opt);
+  });
+  if (uniqueOptions.length < 4) return null;
+  const normalizedOptions = uniqueOptions.slice(0, 4);
   let answer = String(input.answer ?? "").trim();
   if (!answer) return null;
 
@@ -144,12 +159,13 @@ export async function generateQuestionDraft(payload: GenerateQuestionPayload) {
     `学科：${payload.subject}`,
     `年级：${payload.grade}`,
     `知识点：${payload.knowledgePointTitle}`,
-    payload.chapter ? `章节：${payload.chapter}` : ""
+    payload.chapter ? `章节：${payload.chapter}` : "",
+    payload.difficulty ? `难度：${payload.difficulty}` : ""
   ]
     .filter(Boolean)
     .join("\n");
 
-  const userPrompt = `${context}\n请生成 1 道四选一选择题，字段为: stem, options, answer, explanation。\n要求: options 为 4 个简短选项，answer 必须完全等于其中一个选项文本。`;
+  const userPrompt = `${context}\n请生成 1 道四选一选择题，字段为: stem, options, answer, explanation。\n要求: options 为 4 个简短选项，answer 必须完全等于其中一个选项文本，不要包含 A/B/C/D 前缀。`;
 
   let text: string | null = null;
   if (provider === "zhipu" || provider === "compatible") {

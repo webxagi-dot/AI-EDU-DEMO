@@ -1,4 +1,5 @@
 export type Subject = "math" | "chinese" | "english";
+export type Difficulty = "easy" | "medium" | "hard";
 
 export type KnowledgePoint = {
   id: string;
@@ -17,4 +18,5 @@ export type Question = {
   options: string[];
   answer: string;
   explanation: string;
+  difficulty?: Difficulty;
 };

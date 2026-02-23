@@ -42,8 +42,11 @@ CREATE TABLE IF NOT EXISTS questions (
   stem TEXT NOT NULL,
   options TEXT[] NOT NULL,
   answer TEXT NOT NULL,
-  explanation TEXT NOT NULL
+  explanation TEXT NOT NULL,
+  difficulty TEXT DEFAULT 'medium'
 );
+
+ALTER TABLE questions ADD COLUMN IF NOT EXISTS difficulty TEXT;
 
 CREATE TABLE IF NOT EXISTS question_attempts (
   id TEXT PRIMARY KEY,
@@ -96,3 +99,16 @@ CREATE TABLE IF NOT EXISTS correction_tasks (
 
 CREATE INDEX IF NOT EXISTS correction_tasks_user_idx ON correction_tasks (user_id);
 CREATE INDEX IF NOT EXISTS correction_tasks_due_idx ON correction_tasks (due_date);
+
+CREATE TABLE IF NOT EXISTS admin_logs (
+  id TEXT PRIMARY KEY,
+  admin_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  action TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id TEXT,
+  detail TEXT,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS admin_logs_admin_idx ON admin_logs (admin_id);
+CREATE INDEX IF NOT EXISTS admin_logs_created_idx ON admin_logs (created_at);
