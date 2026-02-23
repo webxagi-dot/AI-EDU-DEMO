@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { createUser, getUserByEmail } from "@/lib/auth";
 import { upsertStudentProfile } from "@/lib/profiles";
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const body = (await request.json()) as {

@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { getCurrentUser } from "@/lib/auth";
 import { getQuestions } from "@/lib/content";
 import { addAttempt } from "@/lib/progress";
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();

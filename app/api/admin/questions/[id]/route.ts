@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { deleteQuestion, updateQuestion } from "@/lib/content";
 import { requireRole } from "@/lib/guard";
+export const dynamic = "force-dynamic";
 
 export async function PATCH(request: Request, context: { params: { id: string } }) {
   const user = await requireRole("admin");

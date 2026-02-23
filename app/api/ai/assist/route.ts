@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateAssistAnswer } from "@/lib/ai";
+export const dynamic = "force-dynamic";
 
 type AssistRequest = {
   question: string;

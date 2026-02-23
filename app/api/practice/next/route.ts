@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getPracticeQuestions, getWrongQuestionIds } from "@/lib/progress";
 import { getQuestions } from "@/lib/content";
 import { getStudentProfile } from "@/lib/profiles";
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();

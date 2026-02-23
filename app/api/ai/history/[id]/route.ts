@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { deleteHistoryItem, updateHistoryItem } from "@/lib/ai-history";
+export const dynamic = "force-dynamic";
 
 export async function PATCH(request: Request, context: { params: { id: string } }) {
   const user = await getCurrentUser();

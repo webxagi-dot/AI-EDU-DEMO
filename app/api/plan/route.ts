@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { generateStudyPlan, generateStudyPlans, getStudyPlan, getStudyPlans } from "@/lib/progress";
 import { getStudentProfile } from "@/lib/profiles";
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const user = await getCurrentUser();

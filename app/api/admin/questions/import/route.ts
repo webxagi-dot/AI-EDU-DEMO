@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createQuestion } from "@/lib/content";
 import { requireRole } from "@/lib/guard";
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const user = await requireRole("admin");

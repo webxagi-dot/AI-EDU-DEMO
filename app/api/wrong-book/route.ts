@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getQuestions } from "@/lib/content";
 import { getWrongQuestionIds } from "@/lib/progress";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const user = await getCurrentUser();

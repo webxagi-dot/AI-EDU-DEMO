@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { addHistoryItem, getHistoryByUser } from "@/lib/ai-history";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const user = await getCurrentUser();

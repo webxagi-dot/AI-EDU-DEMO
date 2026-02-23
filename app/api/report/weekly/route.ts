@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getStudentContext } from "@/lib/user-context";
 import { getStudentProfile } from "@/lib/profiles";
 import { getDailyAccuracy, getStatsBetween, getWeakKnowledgePoints, getWeeklyStats } from "@/lib/progress";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const student = await getStudentContext();
