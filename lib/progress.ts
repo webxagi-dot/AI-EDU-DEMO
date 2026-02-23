@@ -466,3 +466,38 @@ export async function getBadges(userId: string) {
   }
   return badges;
 }
+
+export async function getKnowledgeProfile(userId: string, subjects?: string[]) {
+  const attempts = await getAttemptsByUser(userId);
+  const knowledgePoints = await getKnowledgePoints();
+  const filtered = subjects?.length
+    ? knowledgePoints.filter((kp) => subjects.includes(kp.subject))
+    : knowledgePoints;
+
+  const stats = new Map<
+    string,
+    { correct: number; total: number; lastAttemptAt: string | null }
+  >();
+
+  attempts.forEach((attempt) => {
+    const current = stats.get(attempt.knowledgePointId) ?? { correct: 0, total: 0, lastAttemptAt: null };
+    current.total += 1;
+    current.correct += attempt.correct ? 1 : 0;
+    if (!current.lastAttemptAt || new Date(attempt.createdAt).getTime() > new Date(current.lastAttemptAt).getTime()) {
+      current.lastAttemptAt = attempt.createdAt;
+    }
+    stats.set(attempt.knowledgePointId, current);
+  });
+
+  return filtered.map((kp) => {
+    const stat = stats.get(kp.id) ?? { correct: 0, total: 0, lastAttemptAt: null };
+    const ratio = stat.total === 0 ? 0 : stat.correct / stat.total;
+    return {
+      kp,
+      correct: stat.correct,
+      total: stat.total,
+      ratio,
+      lastAttemptAt: stat.lastAttemptAt
+    };
+  });
+}

@@ -5,12 +5,21 @@ import Card from "@/components/Card";
 
 export default function ReportPage() {
   const [report, setReport] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
     fetch("/api/report/weekly")
       .then((res) => res.json())
       .then((data) => setReport(data));
+    fetch("/api/report/profile")
+      .then((res) => res.json())
+      .then((data) => setProfile(data));
   }, []);
+
+  const ratioColor = (ratio: number) => {
+    const hue = Math.min(120, Math.max(0, Math.round((ratio / 100) * 120)));
+    return `hsl(${hue}, 70%, 88%)`;
+  };
 
   if (!report) {
     return <Card title="学习报告">加载中...</Card>;
@@ -44,7 +53,43 @@ export default function ReportPage() {
           </div>
         </div>
       </Card>
-      <Card title="学习趋势（近 7 天）">
+      <Card title="学习画像 · 知识点掌握热力图">
+        {!profile ? <p>加载中...</p> : null}
+        {profile?.error ? <p>学习画像加载失败。</p> : null}
+        {profile?.subjects?.length ? (
+          <div className="grid" style={{ gap: 16 }}>
+            {profile.subjects.map((group: any) => (
+              <div key={group.subject}>
+                <div className="section-title">
+                  {group.label}（{group.practiced}/{group.total} 已练习，均值 {group.avgRatio}%）
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {group.items.map((item: any) => (
+                    <div
+                      key={item.id}
+                      style={{
+                        padding: "8px 12px",
+                        borderRadius: 12,
+                        border: "1px solid var(--stroke)",
+                        background: ratioColor(item.ratio),
+                        minWidth: 140
+                      }}
+                    >
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{item.title}</div>
+                      <div style={{ fontSize: 12, color: "var(--ink-1)" }}>
+                        {item.ratio}% · {item.total} 题
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p>暂无知识点掌握数据。</p>
+        )}
+      </Card>
+      <Card title="掌握趋势（近 7 天）">
         <div className="grid" style={{ gap: 8 }}>
           {report.trend?.map((item: any) => (
             <div key={item.date} style={{ display: "flex", alignItems: "center", gap: 8 }}>

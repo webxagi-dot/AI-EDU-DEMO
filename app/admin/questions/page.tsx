@@ -37,6 +37,15 @@ export default function QuestionsAdminPage() {
     answer: "",
     explanation: ""
   });
+  const [aiForm, setAiForm] = useState({
+    subject: "math",
+    grade: "4",
+    knowledgePointId: "",
+    count: 1
+  });
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiMessage, setAiMessage] = useState<string | null>(null);
+  const [aiErrors, setAiErrors] = useState<string[]>([]);
 
   async function load() {
     setLoading(true);
@@ -59,7 +68,10 @@ export default function QuestionsAdminPage() {
     if (knowledgePoints.length && !form.knowledgePointId) {
       setForm((prev) => ({ ...prev, knowledgePointId: knowledgePoints[0].id }));
     }
-  }, [knowledgePoints, form.knowledgePointId]);
+    if (knowledgePoints.length && !aiForm.knowledgePointId) {
+      setAiForm((prev) => ({ ...prev, knowledgePointId: knowledgePoints[0].id }));
+    }
+  }, [knowledgePoints, form.knowledgePointId, aiForm.knowledgePointId]);
 
   function parseCsv(text: string) {
     const rows: string[][] = [];
@@ -193,6 +205,39 @@ export default function QuestionsAdminPage() {
     load();
   }
 
+  async function handleGenerate(event: React.FormEvent) {
+    event.preventDefault();
+    setAiMessage(null);
+    setAiErrors([]);
+    setAiLoading(true);
+
+    const res = await fetch("/api/admin/questions/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subject: aiForm.subject,
+        grade: aiForm.grade,
+        knowledgePointId: aiForm.knowledgePointId,
+        count: aiForm.count
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      setAiErrors([data?.error ?? "生成失败"]);
+      setAiLoading(false);
+      return;
+    }
+
+    const failed = data.failed ?? [];
+    if (failed.length) {
+      setAiErrors(failed.map((item: any) => `第 ${item.index + 1} 题：${item.reason}`));
+    }
+    setAiMessage(`已生成 ${data.created?.length ?? 0} 题。`);
+    setAiLoading(false);
+    load();
+  }
+
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault();
     const options = form.options
@@ -255,6 +300,69 @@ export default function QuestionsAdminPage() {
         {importErrors.length ? (
           <div style={{ marginTop: 8, color: "#b42318", fontSize: 13 }}>
             {importErrors.slice(0, 5).map((err) => (
+              <div key={err}>{err}</div>
+            ))}
+          </div>
+        ) : null}
+      </Card>
+      <Card title="AI 生成题目">
+        <p style={{ color: "var(--ink-1)", fontSize: 13 }}>
+          需要配置 LLM（如智谱），系统会按知识点自动生成选择题。
+        </p>
+        <form onSubmit={handleGenerate} style={{ display: "grid", gap: 12, marginTop: 12 }}>
+          <label>
+            <div className="section-title">学科</div>
+            <select
+              value={aiForm.subject}
+              onChange={(event) => setAiForm({ ...aiForm, subject: event.target.value })}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            >
+              <option value="math">数学</option>
+              <option value="chinese">语文</option>
+              <option value="english">英语</option>
+            </select>
+          </label>
+          <label>
+            <div className="section-title">年级</div>
+            <input
+              value={aiForm.grade}
+              onChange={(event) => setAiForm({ ...aiForm, grade: event.target.value })}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            />
+          </label>
+          <label>
+            <div className="section-title">知识点</div>
+            <select
+              value={aiForm.knowledgePointId}
+              onChange={(event) => setAiForm({ ...aiForm, knowledgePointId: event.target.value })}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            >
+              {knowledgePoints.map((kp) => (
+                <option value={kp.id} key={kp.id}>
+                  {kp.title} ({kp.grade}年级)
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <div className="section-title">生成题量（1-5）</div>
+            <input
+              type="number"
+              min={1}
+              max={5}
+              value={aiForm.count}
+              onChange={(event) => setAiForm({ ...aiForm, count: Number(event.target.value) })}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            />
+          </label>
+          <button className="button primary" type="submit" disabled={aiLoading}>
+            {aiLoading ? "生成中..." : "开始生成"}
+          </button>
+        </form>
+        {aiMessage ? <div style={{ marginTop: 8 }}>{aiMessage}</div> : null}
+        {aiErrors.length ? (
+          <div style={{ marginTop: 8, color: "#b42318", fontSize: 13 }}>
+            {aiErrors.slice(0, 5).map((err) => (
               <div key={err}>{err}</div>
             ))}
           </div>

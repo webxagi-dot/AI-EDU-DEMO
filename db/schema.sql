@@ -81,3 +81,18 @@ CREATE TABLE IF NOT EXISTS ai_history (
   tags TEXT[] NOT NULL DEFAULT '{}',
   created_at TIMESTAMPTZ NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS correction_tasks (
+  id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  question_id TEXT REFERENCES questions(id) ON DELETE CASCADE,
+  subject TEXT NOT NULL,
+  knowledge_point_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  due_date TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL,
+  completed_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS correction_tasks_user_idx ON correction_tasks (user_id);
+CREATE INDEX IF NOT EXISTS correction_tasks_due_idx ON correction_tasks (due_date);

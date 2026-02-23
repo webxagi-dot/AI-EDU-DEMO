@@ -14,8 +14,25 @@ export type AssistResponse = {
   provider: string;
 };
 
+export type QuestionDraft = {
+  stem: string;
+  options: string[];
+  answer: string;
+  explanation: string;
+};
+
+export type GenerateQuestionPayload = {
+  subject: string;
+  grade: string;
+  knowledgePointTitle: string;
+  chapter?: string;
+};
+
 const SYSTEM_PROMPT =
   "你是小学课后辅导老师。请用简洁、清晰、分步骤的方式讲解，避免直接给出复杂推理。";
+
+const GENERATE_PROMPT =
+  "你是小学人教版出题老师。只输出严格 JSON，不要附加解释或代码块。";
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
@@ -77,6 +94,76 @@ async function callZhipuLLM(messages: ChatMessage[]) {
   const baseUrl = process.env.LLM_BASE_URL ?? "https://open.bigmodel.cn/api/paas/v4";
   const model = process.env.LLM_MODEL ?? "glm-4.7";
   return callChatCompletions({ baseUrl, apiKey, model, messages });
+}
+
+function extractJson(text: string) {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return null;
+  const slice = text.slice(start, end + 1);
+  try {
+    return JSON.parse(slice);
+  } catch {
+    return null;
+  }
+}
+
+function normalizeDraft(input: any): QuestionDraft | null {
+  if (!input || typeof input !== "object") return null;
+  const stem = String(input.stem ?? "").trim();
+  const explanation = String(input.explanation ?? "").trim();
+  const rawOptions = Array.isArray(input.options) ? input.options : [];
+  const options = rawOptions.map((item: any) => String(item).trim()).filter(Boolean);
+  if (!stem || !explanation || options.length < 3) return null;
+
+  const normalizedOptions = options.slice(0, 4);
+  let answer = String(input.answer ?? "").trim();
+  if (!answer) return null;
+
+  const letterMap = { A: 0, B: 1, C: 2, D: 3 } as const;
+  const upper = answer.toUpperCase();
+  if (upper in letterMap) {
+    const idx = letterMap[upper as keyof typeof letterMap];
+    if (normalizedOptions[idx]) {
+      answer = normalizedOptions[idx];
+    }
+  }
+
+  if (!normalizedOptions.includes(answer)) {
+    return null;
+  }
+
+  return { stem, options: normalizedOptions, answer, explanation };
+}
+
+export async function generateQuestionDraft(payload: GenerateQuestionPayload) {
+  const provider = process.env.LLM_PROVIDER ?? "mock";
+  if (provider === "mock") return null;
+
+  const context = [
+    `学科：${payload.subject}`,
+    `年级：${payload.grade}`,
+    `知识点：${payload.knowledgePointTitle}`,
+    payload.chapter ? `章节：${payload.chapter}` : ""
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const userPrompt = `${context}\n请生成 1 道四选一选择题，字段为: stem, options, answer, explanation。\n要求: options 为 4 个简短选项，answer 必须完全等于其中一个选项文本。`;
+
+  let text: string | null = null;
+  if (provider === "zhipu" || provider === "compatible") {
+    text = await callZhipuLLM([
+      { role: "system", content: GENERATE_PROMPT },
+      { role: "user", content: userPrompt }
+    ]);
+  } else if (provider === "custom") {
+    text = await callCustomLLM(`${GENERATE_PROMPT}\n${userPrompt}`);
+  }
+
+  if (!text) return null;
+  const parsed = extractJson(text);
+  return normalizeDraft(parsed);
 }
 
 export async function generateAssistAnswer(payload: AssistPayload): Promise<AssistResponse> {
