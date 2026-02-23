@@ -1,0 +1,32 @@
+[
+  {
+    "id": "20eb325538e035f1ce65",
+    "userId": "u-student-001",
+    "questionId": "q-math-001",
+    "subject": "math",
+    "knowledgePointId": "math-g4-fractions-meaning",
+    "correct": true,
+    "answer": "3/8",
+    "createdAt": "2026-02-23T11:58:50.073Z"
+  },
+  {
+    "id": "b461811dda0e174cf515",
+    "userId": "u-student-001",
+    "questionId": "q-math-002",
+    "subject": "math",
+    "knowledgePointId": "math-g4-fractions-meaning",
+    "correct": true,
+    "answer": "把 1 个整体平均分成 4 份取 3 份",
+    "createdAt": "2026-02-23T11:58:50.074Z"
+  },
+  {
+    "id": "729b8aca8094bc553c31",
+    "userId": "u-student-001",
+    "questionId": "q-math-003",
+    "subject": "math",
+    "knowledgePointId": "math-g4-fractions-meaning",
+    "correct": true,
+    "answer": "3/4",
+    "createdAt": "2026-02-23T11:58:50.074Z"
+  }
+]

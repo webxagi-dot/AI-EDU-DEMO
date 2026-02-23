@@ -1,0 +1,52 @@
+[
+  {
+    "id": "q-math-001",
+    "subject": "math",
+    "grade": "4",
+    "knowledgePointId": "math-g4-fractions-meaning",
+    "stem": "把一个披萨平均分成 8 份，小明吃了 3 份，吃了几分之几？",
+    "options": ["1/8", "3/8", "3/5", "8/3"],
+    "answer": "3/8",
+    "explanation": "平均分成 8 份，每份是 1/8，吃了 3 份就是 3/8。"
+  },
+  {
+    "id": "q-math-002",
+    "subject": "math",
+    "grade": "4",
+    "knowledgePointId": "math-g4-fractions-meaning",
+    "stem": "3/4 表示什么？",
+    "options": ["把 3 份平均分成 4 份", "把 1 个整体平均分成 4 份取 3 份", "把 4 份平均分成 3 份", "把 3 个整体平均分成 4 份"],
+    "answer": "把 1 个整体平均分成 4 份取 3 份",
+    "explanation": "分母表示平均分成的份数，分子表示取了几份。"
+  },
+  {
+    "id": "q-math-003",
+    "subject": "math",
+    "grade": "4",
+    "knowledgePointId": "math-g4-fractions-meaning",
+    "stem": "1/2 + 1/4 等于多少？",
+    "options": ["2/6", "3/4", "2/4", "1/6"],
+    "answer": "3/4",
+    "explanation": "通分后 1/2 = 2/4，所以 2/4 + 1/4 = 3/4。"
+  },
+  {
+    "id": "q-ch-001",
+    "subject": "chinese",
+    "grade": "5",
+    "knowledgePointId": "chinese-g5-reading",
+    "stem": "阅读短文时，最能帮助理解中心思想的方法是？",
+    "options": ["逐字背诵", "抓住关键句", "只看标题", "跳过段落"],
+    "answer": "抓住关键句",
+    "explanation": "关键句通常概括了段落或全文的中心意思。"
+  },
+  {
+    "id": "q-en-001",
+    "subject": "english",
+    "grade": "3",
+    "knowledgePointId": "english-g3-phonics",
+    "stem": "单词 cat 的发音中，字母 a 的发音是？",
+    "options": ["/ei/", "/æ/", "/i:/", "/u:/"],
+    "answer": "/æ/",
+    "explanation": "cat 中 a 的发音是短元音 /æ/。"
+  }
+]

@@ -1,0 +1,25 @@
+[
+  {
+    "id": "u-admin-001",
+    "email": "admin@demo.com",
+    "name": "管理员",
+    "role": "admin",
+    "password": "plain:Admin123"
+  },
+  {
+    "id": "u-student-001",
+    "email": "student@demo.com",
+    "name": "小星",
+    "role": "student",
+    "grade": "4",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-parent-001",
+    "email": "parent@demo.com",
+    "name": "星妈",
+    "role": "parent",
+    "studentId": "u-student-001",
+    "password": "plain:Parent123"
+  }
+]

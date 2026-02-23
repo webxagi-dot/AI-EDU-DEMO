@@ -1,0 +1,14 @@
+[
+  {
+    "userId": "u-student-001",
+    "subject": "math",
+    "createdAt": "2026-02-23T11:58:50.075Z",
+    "items": [
+      {
+        "knowledgePointId": "math-g4-fractions-meaning",
+        "targetCount": 5,
+        "dueDate": "2026-02-23T11:58:50.075Z"
+      }
+    ]
+  }
+]
