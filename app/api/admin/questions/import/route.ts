@@ -21,6 +21,9 @@ export async function POST(request: Request) {
       answer?: string;
       explanation?: string;
       difficulty?: Difficulty;
+      questionType?: string;
+      tags?: string[];
+      abilities?: string[];
     }[];
   };
 
@@ -44,7 +47,10 @@ export async function POST(request: Request) {
       options: item.options,
       answer: item.answer,
       explanation: item.explanation ?? "",
-      difficulty: item.difficulty ?? "medium"
+      difficulty: item.difficulty ?? "medium",
+      questionType: item.questionType ?? "choice",
+      tags: item.tags ?? [],
+      abilities: item.abilities ?? []
     });
     if (next?.id) created.push(next.id);
   }

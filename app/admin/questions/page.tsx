@@ -21,12 +21,21 @@ type Question = {
   answer: string;
   explanation: string;
   difficulty?: string;
+  questionType?: string;
+  tags?: string[];
+  abilities?: string[];
 };
 
 const difficultyLabel: Record<string, string> = {
   easy: "简单",
   medium: "适中",
   hard: "困难"
+};
+
+const questionTypeLabel: Record<string, string> = {
+  choice: "选择题",
+  fill: "填空题",
+  short: "简答题"
 };
 
 export default function QuestionsAdminPage() {
@@ -43,7 +52,10 @@ export default function QuestionsAdminPage() {
     options: "",
     answer: "",
     explanation: "",
-    difficulty: "medium"
+    difficulty: "medium",
+    questionType: "choice",
+    tags: "",
+    abilities: ""
   });
   const [aiForm, setAiForm] = useState({
     subject: "math",
@@ -142,6 +154,13 @@ export default function QuestionsAdminPage() {
     return rows;
   }
 
+  function parseListText(input: string) {
+    return input
+      .split(/[,|，\n]/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
   function downloadTemplate() {
     const header = [
       "subject",
@@ -152,7 +171,10 @@ export default function QuestionsAdminPage() {
       "options",
       "answer",
       "explanation",
-      "difficulty"
+      "difficulty",
+      "questionType",
+      "tags",
+      "abilities"
     ];
     const sample = [
       "math",
@@ -163,7 +185,10 @@ export default function QuestionsAdminPage() {
       "1/8|3/8|3/5|8/3",
       "3/8",
       "平均分成 8 份，每份是 1/8，吃了 3 份就是 3/8。",
-      "medium"
+      "medium",
+      "choice",
+      "分数|图形",
+      "计算|理解"
     ];
     const csv = `${header.join(",")}\n${sample.map((item) => `\"${item}\"`).join(",")}\n`;
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -198,6 +223,8 @@ export default function QuestionsAdminPage() {
         .split("|")
         .map((opt) => opt.trim())
         .filter(Boolean);
+      const tags = parseListText(record.tags || "");
+      const abilities = parseListText(record.abilities || "");
       let knowledgePointId = record.knowledgePointId;
       if (!knowledgePointId && record.knowledgePointTitle) {
         const kp = knowledgePoints.find(
@@ -217,7 +244,10 @@ export default function QuestionsAdminPage() {
         options,
         answer: record.answer,
         explanation: record.explanation,
-        difficulty: record.difficulty
+        difficulty: record.difficulty,
+        questionType: record.questionType,
+        tags,
+        abilities
       });
     }
 
@@ -296,6 +326,8 @@ export default function QuestionsAdminPage() {
       .split("\n")
       .map((item) => item.trim())
       .filter(Boolean);
+    const tags = parseListText(form.tags);
+    const abilities = parseListText(form.abilities);
 
     await fetch("/api/admin/questions", {
       method: "POST",
@@ -308,7 +340,10 @@ export default function QuestionsAdminPage() {
         options,
         answer: form.answer,
         explanation: form.explanation,
-        difficulty: form.difficulty
+        difficulty: form.difficulty,
+        questionType: form.questionType,
+        tags,
+        abilities
       })
     });
 
@@ -320,7 +355,10 @@ export default function QuestionsAdminPage() {
       options: "",
       answer: "",
       explanation: "",
-      difficulty: form.difficulty
+      difficulty: form.difficulty,
+      questionType: form.questionType,
+      tags: "",
+      abilities: ""
     });
     load();
   }
@@ -514,6 +552,18 @@ export default function QuestionsAdminPage() {
             </select>
           </label>
           <label>
+            <div className="section-title">题型</div>
+            <select
+              value={form.questionType}
+              onChange={(event) => setForm({ ...form, questionType: event.target.value })}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            >
+              <option value="choice">选择题</option>
+              <option value="fill">填空题</option>
+              <option value="short">简答题</option>
+            </select>
+          </label>
+          <label>
             <div className="section-title">题干</div>
             <textarea
               value={form.stem}
@@ -548,6 +598,24 @@ export default function QuestionsAdminPage() {
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
             />
           </label>
+          <label>
+            <div className="section-title">标签（逗号或 | 分隔）</div>
+            <input
+              value={form.tags}
+              onChange={(event) => setForm({ ...form, tags: event.target.value })}
+              placeholder="如：分数, 图形"
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            />
+          </label>
+          <label>
+            <div className="section-title">能力维度（逗号或 | 分隔）</div>
+            <input
+              value={form.abilities}
+              onChange={(event) => setForm({ ...form, abilities: event.target.value })}
+              placeholder="如：计算, 理解"
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            />
+          </label>
           <button className="button primary" type="submit">
             保存
           </button>
@@ -562,8 +630,19 @@ export default function QuestionsAdminPage() {
               <div className="section-title">{item.stem}</div>
               <div style={{ fontSize: 12, color: "var(--ink-1)" }}>
                 {item.subject} · {item.grade} 年级 · 难度{" "}
-                {difficultyLabel[item.difficulty ?? "medium"] ?? item.difficulty ?? "中"} · 选项 {item.options.length} 个
+                {difficultyLabel[item.difficulty ?? "medium"] ?? item.difficulty ?? "中"} · 题型{" "}
+                {questionTypeLabel[item.questionType ?? "choice"] ?? item.questionType ?? "选择题"} · 选项{" "}
+                {item.options.length} 个
               </div>
+              {item.tags?.length ? (
+                <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {item.tags.map((tag) => (
+                    <span className="badge" key={`${item.id}-${tag}`}>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
               <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
                 <div className="badge">答案：{item.answer}</div>
                 <button className="button secondary" onClick={() => handleDelete(item.id)}>

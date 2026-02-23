@@ -31,6 +31,9 @@ export async function POST(request: Request) {
     answer?: string;
     explanation?: string;
     difficulty?: Difficulty;
+    questionType?: string;
+    tags?: string[];
+    abilities?: string[];
   };
 
   if (!body.subject || !body.grade || !body.knowledgePointId || !body.stem || !body.options || !body.answer) {
@@ -51,7 +54,10 @@ export async function POST(request: Request) {
     options: body.options,
     answer: body.answer,
     explanation: body.explanation ?? "",
-    difficulty
+    difficulty,
+    questionType: body.questionType ?? "choice",
+    tags: body.tags ?? [],
+    abilities: body.abilities ?? []
   });
 
   if (next) {

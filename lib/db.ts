@@ -3,7 +3,7 @@ import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 
-type QueryParam = string | number | boolean | null | string[];
+type QueryParam = string | number | boolean | null | string[] | number[] | Record<string, any>;
 type QueryParams = QueryParam[];
 
 let pool: Pool | null = null;

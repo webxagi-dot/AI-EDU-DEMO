@@ -121,6 +121,17 @@ export async function getAttemptsByUser(userId: string) {
   return rows.map(mapAttempt);
 }
 
+export async function getAttemptsByUsers(userIds: string[]) {
+  if (!userIds.length) return [];
+  if (!isDbEnabled()) {
+    const attempts = await getAttempts();
+    const set = new Set(userIds);
+    return attempts.filter((item) => set.has(item.userId));
+  }
+  const rows = await query<DbAttempt>("SELECT * FROM question_attempts WHERE user_id = ANY($1)", [userIds]);
+  return rows.map(mapAttempt);
+}
+
 export async function getLastAttemptByQuestion(userId: string) {
   const attempts = await getAttemptsByUser(userId);
   const map = new Map<string, QuestionAttempt>();

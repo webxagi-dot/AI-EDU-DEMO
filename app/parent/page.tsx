@@ -9,6 +9,10 @@ export default function ParentPage() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [reminderCopied, setReminderCopied] = useState(false);
+  const [assignmentList, setAssignmentList] = useState<any[]>([]);
+  const [assignmentSummary, setAssignmentSummary] = useState<any>(null);
+  const [assignmentReminder, setAssignmentReminder] = useState("");
+  const [assignmentCopied, setAssignmentCopied] = useState(false);
 
   useEffect(() => {
     fetch("/api/report/weekly")
@@ -19,6 +23,13 @@ export default function ParentPage() {
       .then((data) => {
         setTasks(data.data ?? []);
         setSummary(data.summary ?? null);
+      });
+    fetch("/api/parent/assignments")
+      .then((res) => res.json())
+      .then((data) => {
+        setAssignmentList(data.data ?? []);
+        setAssignmentSummary(data.summary ?? null);
+        setAssignmentReminder(data.reminderText ?? "");
       });
   }, []);
 
@@ -126,6 +137,64 @@ export default function ParentPage() {
             }}
           >
             {reminderCopied ? "已复制" : "复制提醒文案"}
+          </button>
+        </div>
+      </Card>
+      <Card title="作业提醒">
+        <div className="grid grid-2">
+          <div className="card">
+            <div className="section-title">待完成</div>
+            <p>{assignmentSummary?.pending ?? 0} 份</p>
+          </div>
+          <div className="card">
+            <div className="section-title">逾期</div>
+            <p>{assignmentSummary?.overdue ?? 0} 份</p>
+          </div>
+          <div className="card">
+            <div className="section-title">2 天内到期</div>
+            <p>{assignmentSummary?.dueSoon ?? 0} 份</p>
+          </div>
+          <div className="card">
+            <div className="section-title">已完成</div>
+            <p>{assignmentSummary?.completed ?? 0} 份</p>
+          </div>
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <div className="section-title">作业清单</div>
+          {assignmentList.length ? (
+            <div className="grid" style={{ gap: 8 }}>
+              {assignmentList.slice(0, 5).map((item) => (
+                <div className="card" key={item.id}>
+                  <div className="section-title">{item.title}</div>
+                  <p>{item.className}</p>
+                  <p>截止 {new Date(item.dueDate).toLocaleDateString("zh-CN")}</p>
+                  <p>{item.status === "completed" ? "已完成" : "待完成"}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p>暂无作业。</p>
+          )}
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <div className="section-title">提醒文案</div>
+          <pre style={{ whiteSpace: "pre-wrap", fontSize: 12, color: "var(--ink-1)" }}>{assignmentReminder}</pre>
+        </div>
+        <div className="cta-row">
+          <button
+            className="button secondary"
+            type="button"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(assignmentReminder);
+                setAssignmentCopied(true);
+                setTimeout(() => setAssignmentCopied(false), 2000);
+              } catch {
+                setAssignmentCopied(false);
+              }
+            }}
+          >
+            {assignmentCopied ? "已复制" : "复制作业提醒"}
           </button>
         </div>
       </Card>

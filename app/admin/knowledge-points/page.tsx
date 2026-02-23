@@ -49,6 +49,7 @@ export default function KnowledgePointsAdminPage() {
   const [batchError, setBatchError] = useState<string | null>(null);
   const [batchPreview, setBatchPreview] = useState<any[]>([]);
   const [batchConfirming, setBatchConfirming] = useState(false);
+  const [batchShowDetail, setBatchShowDetail] = useState(false);
 
   const chapterOptions = useMemo(() => {
     const filtered = list.filter((kp) => kp.subject === aiForm.subject && kp.grade === aiForm.grade);
@@ -321,6 +322,16 @@ export default function KnowledgePointsAdminPage() {
         {batchPreview.length ? (
           <div style={{ marginTop: 16 }}>
             <div className="section-title">预览结果</div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input
+                  type="checkbox"
+                  checked={batchShowDetail}
+                  onChange={(event) => setBatchShowDetail(event.target.checked)}
+                />
+                展示章节/知识点详情
+              </label>
+            </div>
             <div className="grid" style={{ gap: 10 }}>
               {batchPreview.map((item) => (
                 <div className="card" key={`${item.subject}-${item.grade}`}>
@@ -333,6 +344,22 @@ export default function KnowledgePointsAdminPage() {
                       <div style={{ fontSize: 12, color: "var(--ink-1)" }}>
                         章节数：{unit.chapters?.length ?? 0}
                       </div>
+                      {batchShowDetail ? (
+                        <div style={{ marginTop: 6, display: "grid", gap: 6 }}>
+                          {unit.chapters?.map((chapter: any) => (
+                            <div className="card" key={`${unit.title}-${chapter.title}`}>
+                              <div style={{ fontWeight: 600 }}>{chapter.title}</div>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+                                {chapter.points?.map((point: any) => (
+                                  <span className="badge" key={`${unit.title}-${chapter.title}-${point.title}`}>
+                                    {point.title}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
                   ))}
                   {item.units?.length > 3 ? (

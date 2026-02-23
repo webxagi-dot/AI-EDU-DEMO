@@ -21,5 +21,12 @@
     "role": "parent",
     "studentId": "u-student-001",
     "password": "plain:Parent123"
+  },
+  {
+    "id": "u-teacher-001",
+    "email": "teacher@demo.com",
+    "name": "刘老师",
+    "role": "teacher",
+    "password": "plain:Teacher123"
   }
 ]

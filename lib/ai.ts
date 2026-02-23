@@ -42,6 +42,7 @@ export type GenerateQuestionPayload = {
   knowledgePointTitle: string;
   chapter?: string;
   difficulty?: "easy" | "medium" | "hard";
+  questionType?: string;
 };
 
 export type GenerateKnowledgePointsPayload = {
@@ -199,7 +200,8 @@ export async function generateQuestionDraft(payload: GenerateQuestionPayload) {
     `年级：${payload.grade}`,
     `知识点：${payload.knowledgePointTitle}`,
     payload.chapter ? `章节：${payload.chapter}` : "",
-    payload.difficulty ? `难度：${payload.difficulty}` : ""
+    payload.difficulty ? `难度：${payload.difficulty}` : "",
+    payload.questionType ? `题型：${payload.questionType}` : ""
   ]
     .filter(Boolean)
     .join("\n");

@@ -46,10 +46,16 @@ CREATE TABLE IF NOT EXISTS questions (
   options TEXT[] NOT NULL,
   answer TEXT NOT NULL,
   explanation TEXT NOT NULL,
-  difficulty TEXT DEFAULT 'medium'
+  difficulty TEXT DEFAULT 'medium',
+  question_type TEXT DEFAULT 'choice',
+  tags TEXT[] NOT NULL DEFAULT '{}',
+  abilities TEXT[] NOT NULL DEFAULT '{}'
 );
 
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS difficulty TEXT;
+ALTER TABLE questions ADD COLUMN IF NOT EXISTS question_type TEXT;
+ALTER TABLE questions ADD COLUMN IF NOT EXISTS tags TEXT[];
+ALTER TABLE questions ADD COLUMN IF NOT EXISTS abilities TEXT[];
 
 CREATE TABLE IF NOT EXISTS question_attempts (
   id TEXT PRIMARY KEY,
@@ -102,6 +108,119 @@ CREATE TABLE IF NOT EXISTS correction_tasks (
 
 CREATE INDEX IF NOT EXISTS correction_tasks_user_idx ON correction_tasks (user_id);
 CREATE INDEX IF NOT EXISTS correction_tasks_due_idx ON correction_tasks (due_date);
+
+CREATE TABLE IF NOT EXISTS classes (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  grade TEXT NOT NULL,
+  teacher_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL,
+  join_code TEXT,
+  join_mode TEXT DEFAULT 'approval'
+);
+
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS join_code TEXT;
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS join_mode TEXT;
+
+CREATE TABLE IF NOT EXISTS class_students (
+  id TEXT PRIMARY KEY,
+  class_id TEXT REFERENCES classes(id) ON DELETE CASCADE,
+  student_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  joined_at TIMESTAMPTZ NOT NULL,
+  UNIQUE (class_id, student_id)
+);
+
+CREATE TABLE IF NOT EXISTS class_join_requests (
+  id TEXT PRIMARY KEY,
+  class_id TEXT REFERENCES classes(id) ON DELETE CASCADE,
+  student_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMPTZ NOT NULL,
+  decided_at TIMESTAMPTZ,
+  UNIQUE (class_id, student_id)
+);
+
+CREATE TABLE IF NOT EXISTS assignments (
+  id TEXT PRIMARY KEY,
+  class_id TEXT REFERENCES classes(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  due_date TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS assignment_items (
+  id TEXT PRIMARY KEY,
+  assignment_id TEXT REFERENCES assignments(id) ON DELETE CASCADE,
+  question_id TEXT REFERENCES questions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS assignment_progress (
+  id TEXT PRIMARY KEY,
+  assignment_id TEXT REFERENCES assignments(id) ON DELETE CASCADE,
+  student_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending',
+  completed_at TIMESTAMPTZ,
+  score INT,
+  total INT
+);
+
+CREATE TABLE IF NOT EXISTS assignment_submissions (
+  id TEXT PRIMARY KEY,
+  assignment_id TEXT REFERENCES assignments(id) ON DELETE CASCADE,
+  student_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  answers JSONB NOT NULL,
+  score INT NOT NULL,
+  total INT NOT NULL,
+  submitted_at TIMESTAMPTZ NOT NULL,
+  UNIQUE (assignment_id, student_id)
+);
+
+CREATE TABLE IF NOT EXISTS assignment_reviews (
+  id TEXT PRIMARY KEY,
+  assignment_id TEXT REFERENCES assignments(id) ON DELETE CASCADE,
+  student_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  overall_comment TEXT,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL,
+  UNIQUE (assignment_id, student_id)
+);
+
+CREATE TABLE IF NOT EXISTS assignment_review_items (
+  id TEXT PRIMARY KEY,
+  review_id TEXT REFERENCES assignment_reviews(id) ON DELETE CASCADE,
+  question_id TEXT REFERENCES questions(id) ON DELETE CASCADE,
+  wrong_tag TEXT,
+  comment TEXT
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  type TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL,
+  read_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS classes_teacher_idx ON classes (teacher_id);
+CREATE INDEX IF NOT EXISTS class_students_class_idx ON class_students (class_id);
+CREATE INDEX IF NOT EXISTS class_students_student_idx ON class_students (student_id);
+CREATE INDEX IF NOT EXISTS class_join_requests_class_idx ON class_join_requests (class_id);
+CREATE INDEX IF NOT EXISTS class_join_requests_student_idx ON class_join_requests (student_id);
+CREATE INDEX IF NOT EXISTS assignments_class_idx ON assignments (class_id);
+CREATE INDEX IF NOT EXISTS assignment_items_assignment_idx ON assignment_items (assignment_id);
+CREATE INDEX IF NOT EXISTS assignment_progress_assignment_idx ON assignment_progress (assignment_id);
+CREATE INDEX IF NOT EXISTS assignment_progress_student_idx ON assignment_progress (student_id);
+CREATE INDEX IF NOT EXISTS assignment_submissions_assignment_idx ON assignment_submissions (assignment_id);
+CREATE INDEX IF NOT EXISTS assignment_submissions_student_idx ON assignment_submissions (student_id);
+CREATE INDEX IF NOT EXISTS assignment_reviews_assignment_idx ON assignment_reviews (assignment_id);
+CREATE INDEX IF NOT EXISTS assignment_reviews_student_idx ON assignment_reviews (student_id);
+CREATE INDEX IF NOT EXISTS assignment_review_items_review_idx ON assignment_review_items (review_id);
+CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id);
+CREATE INDEX IF NOT EXISTS notifications_created_idx ON notifications (created_at);
 
 CREATE TABLE IF NOT EXISTS admin_logs (
   id TEXT PRIMARY KEY,

@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { readJson, writeJson } from "./storage";
 import { isDbEnabled, query, queryOne } from "./db";
 
-export type UserRole = "student" | "parent" | "admin";
+export type UserRole = "student" | "parent" | "admin" | "teacher";
 
 export type User = {
   id: string;
@@ -240,6 +240,24 @@ export async function getAdminCount() {
   }
   const row = await queryOne<{ count: string }>("SELECT COUNT(*) as count FROM users WHERE role = 'admin'");
   return Number(row?.count ?? 0);
+}
+
+export async function getTeacherCount() {
+  if (!isDbEnabled()) {
+    const users = await getUsers();
+    return users.filter((user) => user.role === "teacher").length;
+  }
+  const row = await queryOne<{ count: string }>("SELECT COUNT(*) as count FROM users WHERE role = 'teacher'");
+  return Number(row?.count ?? 0);
+}
+
+export async function getParentsByStudentId(studentId: string) {
+  if (!isDbEnabled()) {
+    const users = await getUsers();
+    return users.filter((user) => user.role === "parent" && user.studentId === studentId);
+  }
+  const rows = await query<DbUser>("SELECT * FROM users WHERE role = 'parent' AND student_id = $1", [studentId]);
+  return rows.map(mapUser);
 }
 
 export function getSessionCookieName() {

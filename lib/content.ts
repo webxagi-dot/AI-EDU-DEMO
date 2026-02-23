@@ -25,6 +25,9 @@ type DbQuestion = {
   answer: string;
   explanation: string;
   difficulty: string | null;
+  question_type: string | null;
+  tags: string[] | null;
+  abilities: string[] | null;
 };
 
 function mapKnowledgePoint(row: DbKnowledgePoint): KnowledgePoint {
@@ -48,7 +51,10 @@ function mapQuestion(row: DbQuestion): Question {
     options: row.options,
     answer: row.answer,
     explanation: row.explanation,
-    difficulty: (row.difficulty as Difficulty | null) ?? undefined
+    difficulty: (row.difficulty as Difficulty | null) ?? undefined,
+    questionType: row.question_type ?? undefined,
+    tags: row.tags ?? [],
+    abilities: row.abilities ?? []
   };
 }
 
@@ -143,6 +149,9 @@ export async function createQuestion(input: Omit<Question, "id">) {
     const next: Question = {
       id: `q-${crypto.randomBytes(6).toString("hex")}`,
       difficulty: input.difficulty ?? "medium",
+      questionType: input.questionType ?? "choice",
+      tags: input.tags ?? [],
+      abilities: input.abilities ?? [],
       ...input
     };
     list.push(next);
@@ -151,8 +160,8 @@ export async function createQuestion(input: Omit<Question, "id">) {
   }
   const id = `q-${crypto.randomBytes(6).toString("hex")}`;
   const row = await queryOne<DbQuestion>(
-    `INSERT INTO questions (id, subject, grade, knowledge_point_id, stem, options, answer, explanation, difficulty)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `INSERT INTO questions (id, subject, grade, knowledge_point_id, stem, options, answer, explanation, difficulty, question_type, tags, abilities)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
      RETURNING *`,
     [
       id,
@@ -163,7 +172,10 @@ export async function createQuestion(input: Omit<Question, "id">) {
       input.options,
       input.answer,
       input.explanation,
-      input.difficulty ?? "medium"
+      input.difficulty ?? "medium",
+      input.questionType ?? "choice",
+      input.tags ?? [],
+      input.abilities ?? []
     ]
   );
   return row ? mapQuestion(row) : null;
@@ -188,7 +200,10 @@ export async function updateQuestion(id: string, input: Partial<Question>) {
          options = COALESCE($6, options),
          answer = COALESCE($7, answer),
          explanation = COALESCE($8, explanation),
-         difficulty = COALESCE($9, difficulty)
+         difficulty = COALESCE($9, difficulty),
+         question_type = COALESCE($10, question_type),
+         tags = COALESCE($11, tags),
+         abilities = COALESCE($12, abilities)
      WHERE id = $1
      RETURNING *`,
     [
@@ -200,7 +215,10 @@ export async function updateQuestion(id: string, input: Partial<Question>) {
       input.options ?? null,
       input.answer ?? null,
       input.explanation ?? null,
-      input.difficulty ?? null
+      input.difficulty ?? null,
+      input.questionType ?? null,
+      input.tags ?? null,
+      input.abilities ?? null
     ]
   );
   return row ? mapQuestion(row) : null;

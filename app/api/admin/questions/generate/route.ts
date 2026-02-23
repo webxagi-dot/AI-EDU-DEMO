@@ -92,7 +92,10 @@ export async function POST(request: Request) {
       options: draft.options,
       answer: draft.answer,
       explanation: draft.explanation,
-      difficulty
+      difficulty,
+      questionType: "choice",
+      tags: [],
+      abilities: []
     });
 
     if (!next) {

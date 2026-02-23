@@ -27,6 +27,8 @@ export default function LoginPage() {
       }
       if (data.role === "admin") {
         router.push("/admin");
+      } else if (data.role === "teacher") {
+        router.push("/teacher");
       } else if (data.role === "parent") {
         router.push("/parent");
       } else {
@@ -72,6 +74,9 @@ export default function LoginPage() {
         </div>
         <div style={{ marginTop: 8, fontSize: 13, color: "var(--ink-1)" }}>
           没有账号？<a href="/register">去注册</a>
+        </div>
+        <div style={{ marginTop: 8, fontSize: 13, color: "var(--ink-1)" }}>
+          教师注册：<a href="/teacher/register">去注册</a>
         </div>
         <div style={{ marginTop: 8, fontSize: 13, color: "var(--ink-1)" }}>
           管理员注册：<a href="/admin/register">去注册</a>

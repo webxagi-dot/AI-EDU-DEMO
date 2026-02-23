@@ -20,4 +20,7 @@ export type Question = {
   answer: string;
   explanation: string;
   difficulty?: Difficulty;
+  questionType?: string;
+  tags?: string[];
+  abilities?: string[];
 };
