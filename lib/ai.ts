@@ -57,6 +57,8 @@ export type GenerateKnowledgeTreePayload = {
   edition?: string;
   volume?: string;
   unitCount?: number;
+  chaptersPerUnit?: number;
+  pointsPerChapter?: number;
 };
 
 const SYSTEM_PROMPT =
@@ -273,6 +275,8 @@ export async function generateKnowledgeTreeDraft(payload: GenerateKnowledgeTreeP
   if (provider === "mock") return null;
 
   const unitCount = Math.min(Math.max(Number(payload.unitCount) || 6, 1), 12);
+  const chaptersPerUnit = Math.min(Math.max(Number(payload.chaptersPerUnit) || 2, 1), 4);
+  const pointsPerChapter = Math.min(Math.max(Number(payload.pointsPerChapter) || 4, 2), 8);
   const edition = payload.edition ?? "人教版";
   const volume = payload.volume ?? "上册";
 
@@ -283,7 +287,7 @@ export async function generateKnowledgeTreeDraft(payload: GenerateKnowledgeTreeP
     `册次：${volume}`
   ].join("\n");
 
-  const userPrompt = `${context}\n请输出整本书的知识点树，按“单元->章节->知识点”分层，返回 JSON：{\"units\":[{\"title\":\"第一单元\",\"chapters\":[{\"title\":\"...\",\"points\":[{\"title\":\"...\"}]}]}]}。\n单元数量大约 ${unitCount} 个，每个单元 1-3 章，每章 3-6 个知识点。不要输出多余文本。`;
+  const userPrompt = `${context}\n请输出整本书的知识点树，按“单元->章节->知识点”分层，返回 JSON：{\"units\":[{\"title\":\"第一单元\",\"chapters\":[{\"title\":\"...\",\"points\":[{\"title\":\"...\"}]}]}]}。\n单元数量约 ${unitCount} 个，每单元 ${chaptersPerUnit} 章，每章 ${pointsPerChapter} 个知识点。不要输出多余文本。`;
 
   let text: string | null = null;
   if (provider === "zhipu" || provider === "compatible") {
@@ -319,7 +323,9 @@ export async function generateKnowledgeTreeDraft(payload: GenerateKnowledgeTreeP
         .filter((point: any) => point.title);
 
       if (!points.length) continue;
-      chapters.push({ title: chapterTitle, points });
+      const trimmedPoints = points.slice(0, pointsPerChapter);
+      chapters.push({ title: chapterTitle, points: trimmedPoints });
+      if (chapters.length >= chaptersPerUnit) break;
     }
 
     if (!chapters.length) continue;
