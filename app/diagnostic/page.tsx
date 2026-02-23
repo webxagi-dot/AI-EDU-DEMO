@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/Card";
+import { toPng } from "html-to-image";
 
 type Question = {
   id: string;
@@ -33,6 +34,7 @@ export default function DiagnosticPage() {
     "方法不会",
     "记忆不牢"
   ];
+  const reportRef = useRef<HTMLDivElement | null>(null);
 
   async function startDiagnostic() {
     const res = await fetch("/api/diagnostic/start", {
@@ -67,6 +69,15 @@ export default function DiagnosticPage() {
       breakdown: data.breakdown,
       wrongReasons: data.wrongReasons
     });
+  }
+
+  async function exportImage() {
+    if (!reportRef.current) return;
+    const dataUrl = await toPng(reportRef.current, { backgroundColor: "#ffffff" });
+    const link = document.createElement("a");
+    link.download = "diagnostic-report.png";
+    link.href = dataUrl;
+    link.click();
   }
 
   const current = questions[index];
@@ -164,35 +175,45 @@ export default function DiagnosticPage() {
 
       {result ? (
         <Card title="诊断结果">
-          <p>
-            正确 {result.correct} / {result.total}，正确率 {result.accuracy}%。
-          </p>
-          {result.breakdown?.length ? (
-            <div className="grid" style={{ gap: 8, marginTop: 12 }}>
-              <div className="badge">知识点掌握</div>
-              {result.breakdown.map((item) => (
-                <div className="card" key={item.knowledgePointId}>
-                  <div className="section-title">{item.title}</div>
-                  <p>
-                    正确 {item.correct}/{item.total}，正确率 {item.accuracy}%
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : null}
-          {result.wrongReasons?.length ? (
-            <div className="grid" style={{ gap: 8, marginTop: 12 }}>
-              <div className="badge">错因分布</div>
-              {result.wrongReasons.map((item) => (
-                <div key={item.reason}>
-                  {item.reason}：{item.count} 次
-                </div>
-              ))}
-            </div>
-          ) : null}
-          <Link className="button secondary" href="/plan" style={{ marginTop: 12 }}>
-            查看学习计划
-          </Link>
+          <div ref={reportRef}>
+            <p>
+              正确 {result.correct} / {result.total}，正确率 {result.accuracy}%。
+            </p>
+            {result.breakdown?.length ? (
+              <div className="grid" style={{ gap: 8, marginTop: 12 }}>
+                <div className="badge">知识点掌握</div>
+                {result.breakdown.map((item) => (
+                  <div className="card" key={item.knowledgePointId}>
+                    <div className="section-title">{item.title}</div>
+                    <p>
+                      正确 {item.correct}/{item.total}，正确率 {item.accuracy}%
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {result.wrongReasons?.length ? (
+              <div className="grid" style={{ gap: 8, marginTop: 12 }}>
+                <div className="badge">错因分布</div>
+                {result.wrongReasons.map((item) => (
+                  <div key={item.reason}>
+                    {item.reason}：{item.count} 次
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+          <div className="cta-row">
+            <button className="button secondary" onClick={() => window.print()}>
+              导出 PDF
+            </button>
+            <button className="button secondary" onClick={exportImage}>
+              导出图片
+            </button>
+            <Link className="button secondary" href="/plan">
+              查看学习计划
+            </Link>
+          </div>
         </Card>
       ) : null}
     </div>

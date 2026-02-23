@@ -22,9 +22,15 @@ export default function PracticePage() {
   const [grade, setGrade] = useState("4");
   const [knowledgePoints, setKnowledgePoints] = useState<KnowledgePoint[]>([]);
   const [knowledgePointId, setKnowledgePointId] = useState<string | undefined>(undefined);
+  const [mode, setMode] = useState<"normal" | "challenge" | "timed" | "wrong">("normal");
   const [question, setQuestion] = useState<Question | null>(null);
   const [answer, setAnswer] = useState("");
   const [result, setResult] = useState<{ correct: boolean; explanation: string; answer: string } | null>(null);
+  const [challengeCount, setChallengeCount] = useState(0);
+  const [challengeCorrect, setChallengeCorrect] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/knowledge-points")
@@ -33,12 +39,22 @@ export default function PracticePage() {
   }, []);
 
   async function loadQuestion() {
+    if (mode === "timed" && timeLeft === 0) {
+      setTimeLeft(60);
+      setTimerRunning(true);
+    }
     const res = await fetch("/api/practice/next", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subject, grade, knowledgePointId })
+      body: JSON.stringify({ subject, grade, knowledgePointId, mode })
     });
     const data = await res.json();
+    if (!res.ok) {
+      setError(data?.error ?? "暂无题目");
+      setQuestion(null);
+      return;
+    }
+    setError(null);
     setQuestion(data.question ?? null);
     setAnswer("");
     setResult(null);
@@ -53,9 +69,33 @@ export default function PracticePage() {
     });
     const data = await res.json();
     setResult({ correct: data.correct, explanation: data.explanation, answer: data.answer });
+    if (mode === "challenge") {
+      setChallengeCount((prev) => prev + 1);
+      setChallengeCorrect((prev) => prev + (data.correct ? 1 : 0));
+    }
   }
 
   const filtered = knowledgePoints.filter((kp) => kp.subject === subject && kp.grade === grade);
+
+  useEffect(() => {
+    if (!timerRunning) return;
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setTimerRunning(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [timerRunning]);
+
+  function resetChallenge() {
+    setChallengeCount(0);
+    setChallengeCorrect(0);
+  }
 
   return (
     <div className="grid" style={{ gap: 18 }}>
@@ -89,6 +129,28 @@ export default function PracticePage() {
             </select>
           </label>
           <label>
+            <div className="section-title">模式</div>
+            <select
+              value={mode}
+              onChange={(event) => {
+                const next = event.target.value as "normal" | "challenge" | "timed" | "wrong";
+                setMode(next);
+                setResult(null);
+                setQuestion(null);
+                setAnswer("");
+                setTimeLeft(0);
+                setTimerRunning(false);
+                resetChallenge();
+              }}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            >
+              <option value="normal">普通练习</option>
+              <option value="challenge">闯关模式</option>
+              <option value="timed">限时模式</option>
+              <option value="wrong">错题专练</option>
+            </select>
+          </label>
+          <label>
             <div className="section-title">知识点</div>
             <select
               value={knowledgePointId}
@@ -105,8 +167,19 @@ export default function PracticePage() {
           </label>
         </div>
         <button className="button primary" style={{ marginTop: 12 }} onClick={loadQuestion}>
-          获取题目
+          {mode === "timed" ? "开始限时" : "获取题目"}
         </button>
+        {error ? <div style={{ marginTop: 8, color: "#b42318", fontSize: 13 }}>{error}</div> : null}
+        {mode === "timed" ? (
+          <div style={{ marginTop: 8, fontSize: 13, color: "var(--ink-1)" }}>
+            剩余时间：{timeLeft}s
+          </div>
+        ) : null}
+        {mode === "challenge" ? (
+          <div style={{ marginTop: 8, fontSize: 13, color: "var(--ink-1)" }}>
+            闯关进度：{challengeCount}/5，正确 {challengeCorrect}
+          </div>
+        ) : null}
       </Card>
 
       {question ? (
@@ -130,7 +203,7 @@ export default function PracticePage() {
             <button className="button secondary" onClick={loadQuestion}>
               换一题
             </button>
-            <button className="button primary" onClick={submitAnswer} disabled={!answer}>
+            <button className="button primary" onClick={submitAnswer} disabled={!answer || (mode === "timed" && timeLeft === 0)}>
               提交答案
             </button>
           </div>
@@ -142,6 +215,15 @@ export default function PracticePage() {
           <div className="badge">{result.correct ? "回答正确" : "回答错误"}</div>
           <p style={{ marginTop: 8 }}>正确答案：{result.answer}</p>
           <p>{result.explanation}</p>
+        </Card>
+      ) : null}
+
+      {mode === "challenge" && challengeCount >= 5 ? (
+        <Card title="闯关结果">
+          <p>本次闯关正确 {challengeCorrect} / 5</p>
+          <button className="button secondary" onClick={resetChallenge}>
+            再来一次
+          </button>
         </Card>
       ) : null}
     </div>

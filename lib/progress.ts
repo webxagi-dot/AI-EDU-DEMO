@@ -118,6 +118,15 @@ export function getStudyPlan(userId: string, subject: string) {
   return plans.find((plan) => plan.userId === userId && plan.subject === subject) ?? null;
 }
 
+export function generateStudyPlans(userId: string, subjects: string[]) {
+  return subjects.map((subject) => generateStudyPlan(userId, subject));
+}
+
+export function getStudyPlans(userId: string, subjects: string[]) {
+  const plans = readJson<StudyPlan[]>(PLANS_FILE, []);
+  return plans.filter((plan) => plan.userId === userId && subjects.includes(plan.subject));
+}
+
 export function getPracticeQuestions(subject: string, grade: string, knowledgePointId?: string) {
   const questions = getQuestions().filter((q) => q.subject === subject && q.grade === grade);
   if (knowledgePointId) {
@@ -193,4 +202,66 @@ export function getWeeklyStats(userId: string) {
     correct,
     accuracy: total === 0 ? 0 : Math.round((correct / total) * 100)
   };
+}
+
+function toLocalDateKey(input: Date) {
+  const year = input.getFullYear();
+  const month = String(input.getMonth() + 1).padStart(2, "0");
+  const day = String(input.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function getDailyActivity(userId: string) {
+  const attempts = getAttemptsByUser(userId);
+  const map = new Map<string, number>();
+  attempts.forEach((attempt) => {
+    const key = toLocalDateKey(new Date(attempt.createdAt));
+    map.set(key, (map.get(key) ?? 0) + 1);
+  });
+  return map;
+}
+
+export function getStreak(userId: string) {
+  const activity = getDailyActivity(userId);
+  let streak = 0;
+  const cursor = new Date();
+  while (activity.has(toLocalDateKey(cursor))) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+export function getAccuracyLastDays(userId: string, days: number) {
+  const attempts = getAttemptsByUser(userId);
+  const since = Date.now() - days * 24 * 60 * 60 * 1000;
+  const recent = attempts.filter((a) => new Date(a.createdAt).getTime() >= since);
+  const total = recent.length;
+  const correct = recent.filter((a) => a.correct).length;
+  return {
+    total,
+    correct,
+    accuracy: total === 0 ? 0 : Math.round((correct / total) * 100)
+  };
+}
+
+export function getBadges(userId: string) {
+  const attempts = getAttemptsByUser(userId);
+  const streak = getStreak(userId);
+  const weekly = getAccuracyLastDays(userId, 7);
+  const badges: { id: string; title: string; description: string }[] = [];
+
+  if (attempts.length >= 1) {
+    badges.push({ id: "first", title: "首次学习", description: "完成首次练习" });
+  }
+  if (streak >= 3) {
+    badges.push({ id: "streak-3", title: "连学 3 天", description: "连续学习 3 天" });
+  }
+  if (weekly.total >= 5 && weekly.accuracy >= 80) {
+    badges.push({ id: "accuracy-80", title: "高准确率", description: "近 7 天正确率 ≥ 80%" });
+  }
+  if (attempts.length >= 50) {
+    badges.push({ id: "practice-50", title: "学习达人", description: "完成 50 道题" });
+  }
+  return badges;
 }
