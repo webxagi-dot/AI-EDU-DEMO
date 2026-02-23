@@ -1,6 +1,7 @@
 import { Pool } from "pg";
 
-type QueryParams = Array<string | number | boolean | null>;
+type QueryParam = string | number | boolean | null | string[];
+type QueryParams = QueryParam[];
 
 let pool: Pool | null = null;
 
