@@ -127,7 +127,7 @@ function normalizeDraft(input: any): QuestionDraft | null {
   if (!stem || !explanation || options.length < 4) return null;
 
   const uniqueOptions: string[] = [];
-  options.forEach((opt) => {
+  options.forEach((opt: string) => {
     if (!uniqueOptions.includes(opt)) uniqueOptions.push(opt);
   });
   if (uniqueOptions.length < 4) return null;
