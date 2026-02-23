@@ -17,6 +17,11 @@ npm run dev
 - 家长：parent@demo.com / Parent123
 - 管理员：admin@demo.com / Admin123
 
+## 注册入口
+
+- 注册页：/register
+- 家长注册需要填写绑定学生邮箱
+
 ## AI 配置（可选）
 
 默认使用 mock 讲解。若需要接入模型，设置以下环境变量：

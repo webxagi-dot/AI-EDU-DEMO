@@ -70,6 +70,9 @@ export default function LoginPage() {
         <div style={{ marginTop: 12, fontSize: 13, color: "var(--ink-1)" }}>
           演示账号：student@demo.com / Student123
         </div>
+        <div style={{ marginTop: 8, fontSize: 13, color: "var(--ink-1)" }}>
+          没有账号？<a href="/register">去注册</a>
+        </div>
       </Card>
     </div>
   );

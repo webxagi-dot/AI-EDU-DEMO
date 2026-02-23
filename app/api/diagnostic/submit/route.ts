@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { getCurrentUser } from "@/lib/auth";
-import { getQuestions } from "@/lib/content";
+import { getKnowledgePoints, getQuestions } from "@/lib/content";
 import { addAttempt, generateStudyPlan } from "@/lib/progress";
 
 export async function POST(request: Request) {
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   const body = (await request.json()) as {
     subject?: string;
     grade?: string;
-    answers?: { questionId: string; answer: string }[];
+    answers?: { questionId: string; answer: string; reason?: string }[];
   };
 
   if (!body.subject || !body.grade || !body.answers?.length) {
@@ -21,13 +21,24 @@ export async function POST(request: Request) {
   }
 
   const questions = getQuestions();
+  const kpList = getKnowledgePoints();
+  const kpMap = new Map(kpList.map((kp) => [kp.id, kp.title]));
   let correctCount = 0;
+  const breakdown = new Map<string, { correct: number; total: number }>();
+  const wrongReasons = new Map<string, number>();
 
   body.answers.forEach((item) => {
     const question = questions.find((q) => q.id === item.questionId);
     if (!question) return;
     const correct = item.answer === question.answer;
     if (correct) correctCount += 1;
+    const stat = breakdown.get(question.knowledgePointId) ?? { correct: 0, total: 0 };
+    stat.total += 1;
+    if (correct) stat.correct += 1;
+    breakdown.set(question.knowledgePointId, stat);
+    if (!correct && item.reason) {
+      wrongReasons.set(item.reason, (wrongReasons.get(item.reason) ?? 0) + 1);
+    }
     addAttempt({
       id: crypto.randomBytes(10).toString("hex"),
       userId: user.id,
@@ -36,6 +47,7 @@ export async function POST(request: Request) {
       knowledgePointId: question.knowledgePointId,
       correct,
       answer: item.answer,
+      reason: item.reason,
       createdAt: new Date().toISOString()
     });
   });
@@ -46,6 +58,14 @@ export async function POST(request: Request) {
     total: body.answers.length,
     correct: correctCount,
     accuracy: Math.round((correctCount / body.answers.length) * 100),
-    plan
+    plan,
+    breakdown: Array.from(breakdown.entries()).map(([knowledgePointId, stat]) => ({
+      knowledgePointId,
+      title: kpMap.get(knowledgePointId) ?? "知识点",
+      total: stat.total,
+      correct: stat.correct,
+      accuracy: stat.total === 0 ? 0 : Math.round((stat.correct / stat.total) * 100)
+    })),
+    wrongReasons: Array.from(wrongReasons.entries()).map(([reason, count]) => ({ reason, count }))
   });
 }

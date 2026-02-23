@@ -1,0 +1,127 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import Card from "@/components/Card";
+
+export default function RegisterPage() {
+  const [role, setRole] = useState<"student" | "parent">("student");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [grade, setGrade] = useState("4");
+  const [studentEmail, setStudentEmail] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+
+    const payload: any = { role, name, email, password };
+    if (role === "student") payload.grade = grade;
+    if (role === "parent") payload.studentEmail = studentEmail;
+
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data?.error ?? "注册失败");
+    } else {
+      setMessage("注册成功，请登录。");
+      setName("");
+      setEmail("");
+      setPassword("");
+      setStudentEmail("");
+    }
+    setLoading(false);
+  }
+
+  return (
+    <div className="grid" style={{ gap: 18, maxWidth: 520 }}>
+      <Card title="注册">
+        <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12 }}>
+          <label>
+            <div className="section-title">角色</div>
+            <select
+              value={role}
+              onChange={(event) => setRole(event.target.value as "student" | "parent")}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            >
+              <option value="student">学生</option>
+              <option value="parent">家长</option>
+            </select>
+          </label>
+          <label>
+            <div className="section-title">姓名</div>
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            />
+          </label>
+          <label>
+            <div className="section-title">邮箱</div>
+            <input
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            />
+          </label>
+          <label>
+            <div className="section-title">密码</div>
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            />
+          </label>
+          {role === "student" ? (
+            <label>
+              <div className="section-title">年级</div>
+              <select
+                value={grade}
+                onChange={(event) => setGrade(event.target.value)}
+                style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+              >
+                <option value="1">一年级</option>
+                <option value="2">二年级</option>
+                <option value="3">三年级</option>
+                <option value="4">四年级</option>
+                <option value="5">五年级</option>
+                <option value="6">六年级</option>
+              </select>
+            </label>
+          ) : (
+            <label>
+              <div className="section-title">绑定学生邮箱</div>
+              <input
+                value={studentEmail}
+                onChange={(event) => setStudentEmail(event.target.value)}
+                placeholder="student@demo.com"
+                style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+              />
+            </label>
+          )}
+
+          {error ? <div style={{ color: "#b42318", fontSize: 13 }}>{error}</div> : null}
+          {message ? <div style={{ color: "#027a48", fontSize: 13 }}>{message}</div> : null}
+
+          <button className="button primary" type="submit" disabled={loading}>
+            {loading ? "提交中..." : "注册"}
+          </button>
+        </form>
+        <div style={{ marginTop: 12, fontSize: 13, color: "var(--ink-1)" }}>
+          已有账号？<Link href="/login">去登录</Link>
+        </div>
+      </Card>
+    </div>
+  );
+}

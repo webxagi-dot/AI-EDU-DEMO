@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { getPracticeQuestions } from "@/lib/progress";
+import { getDiagnosticQuestions } from "@/lib/progress";
+import { getStudentProfile } from "@/lib/profiles";
 
 export async function POST(request: Request) {
   const user = getCurrentUser();
@@ -10,9 +11,10 @@ export async function POST(request: Request) {
 
   const body = (await request.json()) as { subject?: string; grade?: string };
   const subject = body.subject ?? "math";
-  const grade = body.grade ?? (user.grade ?? "4");
+  const profile = getStudentProfile(user.id);
+  const grade = body.grade ?? profile?.grade ?? (user.grade ?? "4");
 
-  const questions = getPracticeQuestions(subject, grade).slice(0, 10);
+  const questions = getDiagnosticQuestions(subject, grade, 10);
 
   return NextResponse.json({
     subject,

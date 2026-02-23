@@ -17,7 +17,22 @@ export default function DiagnosticPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [result, setResult] = useState<{ total: number; correct: number; accuracy: number } | null>(null);
+  const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [result, setResult] = useState<{
+    total: number;
+    correct: number;
+    accuracy: number;
+    breakdown?: { knowledgePointId: string; title: string; total: number; correct: number; accuracy: number }[];
+    wrongReasons?: { reason: string; count: number }[];
+  } | null>(null);
+
+  const reasonOptions = [
+    "概念不清",
+    "审题不仔细",
+    "计算粗心",
+    "方法不会",
+    "记忆不牢"
+  ];
 
   async function startDiagnostic() {
     const res = await fetch("/api/diagnostic/start", {
@@ -29,18 +44,29 @@ export default function DiagnosticPage() {
     setQuestions(data.questions ?? []);
     setIndex(0);
     setAnswers({});
+    setReasons({});
     setResult(null);
   }
 
   async function submitDiagnostic() {
-    const payload = Object.entries(answers).map(([questionId, answer]) => ({ questionId, answer }));
+    const payload = Object.entries(answers).map(([questionId, answer]) => ({
+      questionId,
+      answer,
+      reason: reasons[questionId]
+    }));
     const res = await fetch("/api/diagnostic/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ subject, grade, answers: payload })
     });
     const data = await res.json();
-    setResult({ total: data.total, correct: data.correct, accuracy: data.accuracy });
+    setResult({
+      total: data.total,
+      correct: data.correct,
+      accuracy: data.accuracy,
+      breakdown: data.breakdown,
+      wrongReasons: data.wrongReasons
+    });
   }
 
   const current = questions[index];
@@ -100,6 +126,21 @@ export default function DiagnosticPage() {
               </label>
             ))}
           </div>
+          <label style={{ display: "block", marginTop: 12 }}>
+            <div className="section-title">错因（可选）</div>
+            <select
+              value={reasons[current.id] ?? ""}
+              onChange={(event) => setReasons((prev) => ({ ...prev, [current.id]: event.target.value }))}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            >
+              <option value="">未选择</option>
+              {reasonOptions.map((reason) => (
+                <option value={reason} key={reason}>
+                  {reason}
+                </option>
+              ))}
+            </select>
+          </label>
           <div className="cta-row">
             <button
               className="button secondary"
@@ -126,6 +167,29 @@ export default function DiagnosticPage() {
           <p>
             正确 {result.correct} / {result.total}，正确率 {result.accuracy}%。
           </p>
+          {result.breakdown?.length ? (
+            <div className="grid" style={{ gap: 8, marginTop: 12 }}>
+              <div className="badge">知识点掌握</div>
+              {result.breakdown.map((item) => (
+                <div className="card" key={item.knowledgePointId}>
+                  <div className="section-title">{item.title}</div>
+                  <p>
+                    正确 {item.correct}/{item.total}，正确率 {item.accuracy}%
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {result.wrongReasons?.length ? (
+            <div className="grid" style={{ gap: 8, marginTop: 12 }}>
+              <div className="badge">错因分布</div>
+              {result.wrongReasons.map((item) => (
+                <div key={item.reason}>
+                  {item.reason}：{item.count} 次
+                </div>
+              ))}
+            </div>
+          ) : null}
           <Link className="button secondary" href="/plan" style={{ marginTop: 12 }}>
             查看学习计划
           </Link>

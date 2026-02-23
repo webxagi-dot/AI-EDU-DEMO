@@ -62,6 +62,13 @@ export default function StudentPage() {
           查看报告
         </Link>
       </Card>
+
+      <Card title="学生资料">
+        <p>设置年级、学科与学习目标。</p>
+        <Link className="button secondary" href="/student/profile" style={{ marginTop: 12 }}>
+          进入设置
+        </Link>
+      </Card>
     </div>
   );
 }

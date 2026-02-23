@@ -1,5 +1,6 @@
 import { readJson, writeJson } from "./storage";
 import { getKnowledgePoints, getQuestions } from "./content";
+import type { Question } from "./types";
 
 export type QuestionAttempt = {
   id: string;
@@ -9,6 +10,7 @@ export type QuestionAttempt = {
   knowledgePointId: string;
   correct: boolean;
   answer: string;
+  reason?: string;
   createdAt: string;
 };
 
@@ -122,6 +124,49 @@ export function getPracticeQuestions(subject: string, grade: string, knowledgePo
     return questions.filter((q) => q.knowledgePointId === knowledgePointId);
   }
   return questions;
+}
+
+function shuffle<T>(items: T[]) {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+export function getDiagnosticQuestions(subject: string, grade: string, count = 10) {
+  const questions = getPracticeQuestions(subject, grade);
+  const groupMap = new Map<string, Question[]>();
+  questions.forEach((q) => {
+    const group = groupMap.get(q.knowledgePointId) ?? [];
+    group.push(q);
+    groupMap.set(q.knowledgePointId, group);
+  });
+
+  const keys = Array.from(groupMap.keys());
+  keys.forEach((key) => {
+    const group = groupMap.get(key);
+    if (group) groupMap.set(key, shuffle(group));
+  });
+
+  const selected: Question[] = [];
+  let progress = true;
+  while (selected.length < count && progress) {
+    progress = false;
+    for (const key of keys) {
+      const group = groupMap.get(key) ?? [];
+      if (group.length === 0) continue;
+      const next = group.pop();
+      if (next) {
+        selected.push(next);
+        progress = true;
+      }
+      if (selected.length >= count) break;
+    }
+  }
+
+  return selected.length ? selected : questions.slice(0, count);
 }
 
 export function getWeakKnowledgePoints(userId: string, subject: string) {
