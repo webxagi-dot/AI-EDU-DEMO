@@ -25,14 +25,14 @@ export default function ReportPage() {
   };
 
   const chapterOptions = (() => {
-    if (!profile?.subjects?.length) return [];
+    if (!profile?.subjects?.length) return [] as string[];
     const groups =
       subjectFilter === "all"
         ? profile.subjects
         : profile.subjects.filter((group: any) => group.subject === subjectFilter);
     const chapters = groups
       .flatMap((group: any) => group.items.map((item: any) => item.chapter))
-      .filter(Boolean);
+      .filter((item: any): item is string => Boolean(item));
     return Array.from(new Set(chapters));
   })();
 
