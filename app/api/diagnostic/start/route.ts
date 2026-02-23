@@ -4,17 +4,17 @@ import { getDiagnosticQuestions } from "@/lib/progress";
 import { getStudentProfile } from "@/lib/profiles";
 
 export async function POST(request: Request) {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user || user.role !== "student") {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
   const body = (await request.json()) as { subject?: string; grade?: string };
   const subject = body.subject ?? "math";
-  const profile = getStudentProfile(user.id);
+  const profile = await getStudentProfile(user.id);
   const grade = body.grade ?? profile?.grade ?? (user.grade ?? "4");
 
-  const questions = getDiagnosticQuestions(subject, grade, 10);
+  const questions = await getDiagnosticQuestions(subject, grade, 10);
 
   return NextResponse.json({
     subject,

@@ -6,8 +6,8 @@ import { getStudentProfile } from "@/lib/profiles";
 
 export const dynamic = "force-dynamic";
 
-export default function PlanPage() {
-  const user = getCurrentUser();
+export default async function PlanPage() {
+  const user = await getCurrentUser();
   if (!user || user.role !== "student") {
     return (
       <Card title="学习计划">
@@ -16,12 +16,11 @@ export default function PlanPage() {
     );
   }
 
-  const profile = getStudentProfile(user.id);
+  const profile = await getStudentProfile(user.id);
   const subjects = profile?.subjects?.length ? profile.subjects : ["math"];
-  const plans = getStudyPlans(user.id, subjects);
-  const finalPlans = plans.length ? plans : generateStudyPlans(user.id, subjects);
-  const knowledgePoints = getKnowledgePoints();
-
+  const plans = await getStudyPlans(user.id, subjects);
+  const finalPlans = plans.length ? plans : await generateStudyPlans(user.id, subjects);
+  const knowledgePoints = await getKnowledgePoints();
   const labelMap: Record<string, string> = {
     math: "数学",
     chinese: "语文",

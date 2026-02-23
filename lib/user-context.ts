@@ -1,12 +1,11 @@
-import { getCurrentUser, getUsers } from "./auth";
+import { getCurrentUser, getUserById } from "./auth";
 
-export function getStudentContext() {
-  const user = getCurrentUser();
+export async function getStudentContext() {
+  const user = await getCurrentUser();
   if (!user) return null;
   if (user.role === "student") return user;
   if (user.role === "parent" && user.studentId) {
-    const students = getUsers();
-    const student = students.find((item) => item.id === user.studentId);
+    const student = await getUserById(user.studentId);
     if (!student) return null;
     const { password, ...safeStudent } = student;
     return safeStudent as typeof user;

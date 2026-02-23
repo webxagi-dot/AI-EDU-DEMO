@@ -3,15 +3,15 @@ import { createKnowledgePoint, getKnowledgePoints } from "@/lib/content";
 import { requireRole } from "@/lib/guard";
 
 export async function GET() {
-  const user = requireRole("admin");
+  const user = await requireRole("admin");
   if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  return NextResponse.json({ data: getKnowledgePoints() });
+  return NextResponse.json({ data: await getKnowledgePoints() });
 }
 
 export async function POST(request: Request) {
-  const user = requireRole("admin");
+  const user = await requireRole("admin");
   if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "missing fields" }, { status: 400 });
   }
 
-  const next = createKnowledgePoint({
+  const next = await createKnowledgePoint({
     subject: body.subject as any,
     grade: body.grade,
     title: body.title,

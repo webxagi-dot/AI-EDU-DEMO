@@ -7,12 +7,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "email and password are required" }, { status: 400 });
   }
 
-  const user = getUserByEmail(body.email);
+  const user = await getUserByEmail(body.email);
   if (!user || !verifyPassword(body.password, user.password)) {
     return NextResponse.json({ error: "invalid credentials" }, { status: 401 });
   }
 
-  const session = createSession(user);
+  const session = await createSession(user);
   const response = NextResponse.json({ ok: true, role: user.role, name: user.name });
   setSessionCookie(response, session.id);
   return response;

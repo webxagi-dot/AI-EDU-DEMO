@@ -5,7 +5,7 @@ import { getQuestions } from "@/lib/content";
 import { addAttempt } from "@/lib/progress";
 
 export async function POST(request: Request) {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user || user.role !== "student") {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
@@ -15,13 +15,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "missing fields" }, { status: 400 });
   }
 
-  const question = getQuestions().find((q) => q.id === body.questionId);
+  const question = (await getQuestions()).find((q) => q.id === body.questionId);
   if (!question) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
 
   const correct = body.answer === question.answer;
-  addAttempt({
+  await addAttempt({
     id: crypto.randomBytes(10).toString("hex"),
     userId: user.id,
     questionId: question.id,

@@ -8,8 +8,8 @@ export const metadata = {
   description: "小学课后辅导 MVP"
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const user = getCurrentUser();
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const user = await getCurrentUser();
   return (
     <html lang="zh-CN">
       <body>

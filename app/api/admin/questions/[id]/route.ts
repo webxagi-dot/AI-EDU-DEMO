@@ -3,7 +3,7 @@ import { deleteQuestion, updateQuestion } from "@/lib/content";
 import { requireRole } from "@/lib/guard";
 
 export async function PATCH(request: Request, context: { params: { id: string } }) {
-  const user = requireRole("admin");
+  const user = await requireRole("admin");
   if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
@@ -18,7 +18,7 @@ export async function PATCH(request: Request, context: { params: { id: string } 
     explanation?: string;
   };
 
-  const next = updateQuestion(context.params.id, body as any);
+  const next = await updateQuestion(context.params.id, body as any);
   if (!next) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
@@ -27,12 +27,12 @@ export async function PATCH(request: Request, context: { params: { id: string } 
 }
 
 export async function DELETE(_: Request, context: { params: { id: string } }) {
-  const user = requireRole("admin");
+  const user = await requireRole("admin");
   if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const ok = deleteQuestion(context.params.id);
+  const ok = await deleteQuestion(context.params.id);
   if (!ok) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }

@@ -1,8 +1,8 @@
 import { getKnowledgePoints, getQuestions } from "./content";
 
-export function retrieveKnowledgePoints(question: string, subject?: string, grade?: string) {
+export async function retrieveKnowledgePoints(question: string, subject?: string, grade?: string) {
   const input = question.toLowerCase();
-  const knowledgePoints = getKnowledgePoints().filter((kp) => {
+  const knowledgePoints = (await getKnowledgePoints()).filter((kp) => {
     if (subject && kp.subject !== subject) return false;
     if (grade && kp.grade !== grade) return false;
     return true;
@@ -28,9 +28,9 @@ export function retrieveKnowledgePoints(question: string, subject?: string, grad
   return scored.map((item) => item.kp);
 }
 
-export function retrieveSimilarQuestion(question: string, subject?: string, grade?: string) {
+export async function retrieveSimilarQuestion(question: string, subject?: string, grade?: string) {
   const input = question.toLowerCase();
-  const questions = getQuestions().filter((q) => {
+  const questions = (await getQuestions()).filter((q) => {
     if (subject && q.subject !== subject) return false;
     if (grade && q.grade !== grade) return false;
     return true;

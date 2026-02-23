@@ -3,7 +3,7 @@ import { deleteKnowledgePoint, updateKnowledgePoint } from "@/lib/content";
 import { requireRole } from "@/lib/guard";
 
 export async function PATCH(request: Request, context: { params: { id: string } }) {
-  const user = requireRole("admin");
+  const user = await requireRole("admin");
   if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
@@ -15,7 +15,7 @@ export async function PATCH(request: Request, context: { params: { id: string } 
     chapter?: string;
   };
 
-  const next = updateKnowledgePoint(context.params.id, body as any);
+  const next = await updateKnowledgePoint(context.params.id, body as any);
   if (!next) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
@@ -24,12 +24,12 @@ export async function PATCH(request: Request, context: { params: { id: string } 
 }
 
 export async function DELETE(_: Request, context: { params: { id: string } }) {
-  const user = requireRole("admin");
+  const user = await requireRole("admin");
   if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const ok = deleteKnowledgePoint(context.params.id);
+  const ok = await deleteKnowledgePoint(context.params.id);
   if (!ok) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }

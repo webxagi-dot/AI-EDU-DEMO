@@ -5,7 +5,7 @@ import { getKnowledgePoints, getQuestions } from "@/lib/content";
 import { addAttempt, generateStudyPlan } from "@/lib/progress";
 
 export async function POST(request: Request) {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user || user.role !== "student") {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
@@ -20,16 +20,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "missing fields" }, { status: 400 });
   }
 
-  const questions = getQuestions();
-  const kpList = getKnowledgePoints();
+  const questions = await getQuestions();
+  const kpList = await getKnowledgePoints();
   const kpMap = new Map(kpList.map((kp) => [kp.id, kp.title]));
   let correctCount = 0;
   const breakdown = new Map<string, { correct: number; total: number }>();
   const wrongReasons = new Map<string, number>();
 
-  body.answers.forEach((item) => {
+  for (const item of body.answers) {
     const question = questions.find((q) => q.id === item.questionId);
-    if (!question) return;
+    if (!question) continue;
     const correct = item.answer === question.answer;
     if (correct) correctCount += 1;
     const stat = breakdown.get(question.knowledgePointId) ?? { correct: 0, total: 0 };
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     if (!correct && item.reason) {
       wrongReasons.set(item.reason, (wrongReasons.get(item.reason) ?? 0) + 1);
     }
-    addAttempt({
+    await addAttempt({
       id: crypto.randomBytes(10).toString("hex"),
       userId: user.id,
       questionId: question.id,
@@ -50,9 +50,9 @@ export async function POST(request: Request) {
       reason: item.reason,
       createdAt: new Date().toISOString()
     });
-  });
+  }
 
-  const plan = generateStudyPlan(user.id, body.subject);
+  const plan = await generateStudyPlan(user.id, body.subject);
 
   return NextResponse.json({
     total: body.answers.length,

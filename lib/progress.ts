@@ -1,6 +1,8 @@
+import crypto from "crypto";
 import { readJson, writeJson } from "./storage";
 import { getKnowledgePoints, getQuestions } from "./content";
 import type { Question } from "./types";
+import { isDbEnabled, query, queryOne } from "./db";
 
 export type QuestionAttempt = {
   id: string;
@@ -21,6 +23,7 @@ export type StudyPlanItem = {
 };
 
 export type StudyPlan = {
+  id?: string;
   userId: string;
   subject: string;
   createdAt: string;
@@ -30,26 +33,96 @@ export type StudyPlan = {
 const ATTEMPTS_FILE = "question-attempts.json";
 const PLANS_FILE = "study-plans.json";
 
-export function getAttempts(): QuestionAttempt[] {
-  return readJson<QuestionAttempt[]>(ATTEMPTS_FILE, []);
+type DbAttempt = {
+  id: string;
+  user_id: string;
+  question_id: string;
+  subject: string;
+  knowledge_point_id: string;
+  correct: boolean;
+  answer: string;
+  reason: string | null;
+  created_at: string;
+};
+
+type DbPlan = {
+  id: string;
+  user_id: string;
+  subject: string;
+  created_at: string;
+};
+
+type DbPlanItem = {
+  id: string;
+  plan_id: string;
+  knowledge_point_id: string;
+  target_count: number;
+  due_date: string;
+};
+
+function mapAttempt(row: DbAttempt): QuestionAttempt {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    questionId: row.question_id,
+    subject: row.subject,
+    knowledgePointId: row.knowledge_point_id,
+    correct: row.correct,
+    answer: row.answer,
+    reason: row.reason ?? undefined,
+    createdAt: row.created_at
+  };
 }
 
-export function saveAttempts(list: QuestionAttempt[]) {
-  writeJson(ATTEMPTS_FILE, list);
+export async function getAttempts(): Promise<QuestionAttempt[]> {
+  if (!isDbEnabled()) {
+    return readJson<QuestionAttempt[]>(ATTEMPTS_FILE, []);
+  }
+  const rows = await query<DbAttempt>("SELECT * FROM question_attempts");
+  return rows.map(mapAttempt);
 }
 
-export function addAttempt(attempt: QuestionAttempt) {
-  const list = getAttempts();
-  list.push(attempt);
-  saveAttempts(list);
+export async function saveAttempts(list: QuestionAttempt[]) {
+  if (!isDbEnabled()) {
+    writeJson(ATTEMPTS_FILE, list);
+  }
 }
 
-export function getAttemptsByUser(userId: string) {
-  return getAttempts().filter((item) => item.userId === userId);
+export async function addAttempt(attempt: QuestionAttempt) {
+  if (!isDbEnabled()) {
+    const list = await getAttempts();
+    list.push(attempt);
+    await saveAttempts(list);
+    return;
+  }
+  await query(
+    `INSERT INTO question_attempts
+     (id, user_id, question_id, subject, knowledge_point_id, correct, answer, reason, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [
+      attempt.id,
+      attempt.userId,
+      attempt.questionId,
+      attempt.subject,
+      attempt.knowledgePointId,
+      attempt.correct,
+      attempt.answer,
+      attempt.reason ?? null,
+      attempt.createdAt
+    ]
+  );
 }
 
-export function getLastAttemptByQuestion(userId: string) {
-  const attempts = getAttemptsByUser(userId);
+export async function getAttemptsByUser(userId: string) {
+  if (!isDbEnabled()) {
+    return (await getAttempts()).filter((item) => item.userId === userId);
+  }
+  const rows = await query<DbAttempt>("SELECT * FROM question_attempts WHERE user_id = $1", [userId]);
+  return rows.map(mapAttempt);
+}
+
+export async function getLastAttemptByQuestion(userId: string) {
+  const attempts = await getAttemptsByUser(userId);
   const map = new Map<string, QuestionAttempt>();
   attempts.forEach((attempt) => {
     const prev = map.get(attempt.questionId);
@@ -60,15 +133,15 @@ export function getLastAttemptByQuestion(userId: string) {
   return map;
 }
 
-export function getWrongQuestionIds(userId: string) {
-  const lastAttempts = getLastAttemptByQuestion(userId);
+export async function getWrongQuestionIds(userId: string) {
+  const lastAttempts = await getLastAttemptByQuestion(userId);
   return Array.from(lastAttempts.values())
     .filter((attempt) => !attempt.correct)
     .map((attempt) => attempt.questionId);
 }
 
-export function getMasteryByKnowledgePoint(userId: string, subject?: string) {
-  const attempts = getAttemptsByUser(userId).filter((attempt) =>
+export async function getMasteryByKnowledgePoint(userId: string, subject?: string) {
+  const attempts = (await getAttemptsByUser(userId)).filter((attempt) =>
     subject ? attempt.subject === subject : true
   );
   const totals = new Map<string, { correct: number; total: number }>();
@@ -81,9 +154,9 @@ export function getMasteryByKnowledgePoint(userId: string, subject?: string) {
   return totals;
 }
 
-export function generateStudyPlan(userId: string, subject: string): StudyPlan {
-  const knowledgePoints = getKnowledgePoints().filter((kp) => kp.subject === subject);
-  const mastery = getMasteryByKnowledgePoint(userId, subject);
+export async function generateStudyPlan(userId: string, subject: string): Promise<StudyPlan> {
+  const knowledgePoints = (await getKnowledgePoints()).filter((kp) => kp.subject === subject);
+  const mastery = await getMasteryByKnowledgePoint(userId, subject);
   const ranked = knowledgePoints
     .map((kp) => {
       const stat = mastery.get(kp.id) ?? { correct: 0, total: 0 };
@@ -106,29 +179,115 @@ export function generateStudyPlan(userId: string, subject: string): StudyPlan {
     items
   };
 
-  const plans = readJson<StudyPlan[]>(PLANS_FILE, []);
-  const nextPlans = plans.filter((p) => !(p.userId === userId && p.subject === subject));
-  nextPlans.push(plan);
-  writeJson(PLANS_FILE, nextPlans);
-  return plan;
+  if (!isDbEnabled()) {
+    const plans = readJson<StudyPlan[]>(PLANS_FILE, []);
+    const nextPlans = plans.filter((p) => !(p.userId === userId && p.subject === subject));
+    nextPlans.push(plan);
+    writeJson(PLANS_FILE, nextPlans);
+    return plan;
+  }
+
+  const planId = `plan-${crypto.randomBytes(6).toString("hex")}`;
+  await query(
+    "DELETE FROM study_plan_items WHERE plan_id IN (SELECT id FROM study_plans WHERE user_id = $1 AND subject = $2)",
+    [userId, subject]
+  );
+  await query("DELETE FROM study_plans WHERE user_id = $1 AND subject = $2", [userId, subject]);
+  await query(
+    "INSERT INTO study_plans (id, user_id, subject, created_at) VALUES ($1, $2, $3, $4)",
+    [planId, userId, subject, plan.createdAt]
+  );
+
+  for (const item of items) {
+    await query(
+      `INSERT INTO study_plan_items (id, plan_id, knowledge_point_id, target_count, due_date)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        `item-${crypto.randomBytes(6).toString("hex")}`,
+        planId,
+        item.knowledgePointId,
+        item.targetCount,
+        item.dueDate
+      ]
+    );
+  }
+
+  return { ...plan, id: planId };
 }
 
-export function getStudyPlan(userId: string, subject: string) {
-  const plans = readJson<StudyPlan[]>(PLANS_FILE, []);
-  return plans.find((plan) => plan.userId === userId && plan.subject === subject) ?? null;
+export async function getStudyPlan(userId: string, subject: string) {
+  if (!isDbEnabled()) {
+    const plans = readJson<StudyPlan[]>(PLANS_FILE, []);
+    return plans.find((plan) => plan.userId === userId && plan.subject === subject) ?? null;
+  }
+
+  const plan = await queryOne<DbPlan>(
+    "SELECT * FROM study_plans WHERE user_id = $1 AND subject = $2",
+    [userId, subject]
+  );
+  if (!plan) return null;
+  const items = await query<DbPlanItem>(
+    "SELECT * FROM study_plan_items WHERE plan_id = $1",
+    [plan.id]
+  );
+  return {
+    id: plan.id,
+    userId: plan.user_id,
+    subject: plan.subject,
+    createdAt: plan.created_at,
+    items: items.map((item) => ({
+      knowledgePointId: item.knowledge_point_id,
+      targetCount: item.target_count,
+      dueDate: item.due_date
+    }))
+  } as StudyPlan;
 }
 
-export function generateStudyPlans(userId: string, subjects: string[]) {
-  return subjects.map((subject) => generateStudyPlan(userId, subject));
+export async function generateStudyPlans(userId: string, subjects: string[]) {
+  const plans: StudyPlan[] = [];
+  for (const subject of subjects) {
+    plans.push(await generateStudyPlan(userId, subject));
+  }
+  return plans;
 }
 
-export function getStudyPlans(userId: string, subjects: string[]) {
-  const plans = readJson<StudyPlan[]>(PLANS_FILE, []);
-  return plans.filter((plan) => plan.userId === userId && subjects.includes(plan.subject));
+export async function getStudyPlans(userId: string, subjects: string[]) {
+  if (!isDbEnabled()) {
+    const plans = readJson<StudyPlan[]>(PLANS_FILE, []);
+    return plans.filter((plan) => plan.userId === userId && subjects.includes(plan.subject));
+  }
+
+  const rows = await query<DbPlan>(
+    "SELECT * FROM study_plans WHERE user_id = $1 AND subject = ANY($2)",
+    [userId, subjects]
+  );
+  const planIds = rows.map((row) => row.id);
+  if (!planIds.length) return [];
+  const itemRows = await query<DbPlanItem>(
+    "SELECT * FROM study_plan_items WHERE plan_id = ANY($1)",
+    [planIds]
+  );
+  const itemsByPlan = new Map<string, DbPlanItem[]>();
+  itemRows.forEach((item) => {
+    const list = itemsByPlan.get(item.plan_id) ?? [];
+    list.push(item);
+    itemsByPlan.set(item.plan_id, list);
+  });
+  return rows.map((plan) => ({
+    id: plan.id,
+    userId: plan.user_id,
+    subject: plan.subject,
+    createdAt: plan.created_at,
+    items: (itemsByPlan.get(plan.id) ?? []).map((item) => ({
+      knowledgePointId: item.knowledge_point_id,
+      targetCount: item.target_count,
+      dueDate: item.due_date
+    }))
+  }));
 }
 
-export function getPracticeQuestions(subject: string, grade: string, knowledgePointId?: string) {
-  const questions = getQuestions().filter((q) => q.subject === subject && q.grade === grade);
+export async function getPracticeQuestions(subject: string, grade: string, knowledgePointId?: string) {
+  const questions = (await getQuestions()).filter((q) => q.subject === subject && q.grade === grade);
   if (knowledgePointId) {
     return questions.filter((q) => q.knowledgePointId === knowledgePointId);
   }
@@ -144,8 +303,8 @@ function shuffle<T>(items: T[]) {
   return copy;
 }
 
-export function getDiagnosticQuestions(subject: string, grade: string, count = 10) {
-  const questions = getPracticeQuestions(subject, grade);
+export async function getDiagnosticQuestions(subject: string, grade: string, count = 10) {
+  const questions = await getPracticeQuestions(subject, grade);
   const groupMap = new Map<string, Question[]>();
   questions.forEach((q) => {
     const group = groupMap.get(q.knowledgePointId) ?? [];
@@ -178,9 +337,9 @@ export function getDiagnosticQuestions(subject: string, grade: string, count = 1
   return selected.length ? selected : questions.slice(0, count);
 }
 
-export function getWeakKnowledgePoints(userId: string, subject: string) {
-  const mastery = getMasteryByKnowledgePoint(userId, subject);
-  const knowledgePoints = getKnowledgePoints().filter((kp) => kp.subject === subject);
+export async function getWeakKnowledgePoints(userId: string, subject: string) {
+  const mastery = await getMasteryByKnowledgePoint(userId, subject);
+  const knowledgePoints = (await getKnowledgePoints()).filter((kp) => kp.subject === subject);
   return knowledgePoints
     .map((kp) => {
       const stat = mastery.get(kp.id) ?? { correct: 0, total: 0 };
@@ -191,8 +350,8 @@ export function getWeakKnowledgePoints(userId: string, subject: string) {
     .slice(0, 3);
 }
 
-export function getWeeklyStats(userId: string) {
-  const attempts = getAttemptsByUser(userId);
+export async function getWeeklyStats(userId: string) {
+  const attempts = await getAttemptsByUser(userId);
   const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const recent = attempts.filter((a) => new Date(a.createdAt).getTime() >= weekAgo);
   const total = recent.length;
@@ -204,8 +363,8 @@ export function getWeeklyStats(userId: string) {
   };
 }
 
-export function getStatsBetween(userId: string, start: Date, end: Date) {
-  const attempts = getAttemptsByUser(userId);
+export async function getStatsBetween(userId: string, start: Date, end: Date) {
+  const attempts = await getAttemptsByUser(userId);
   const recent = attempts.filter((a) => {
     const ts = new Date(a.createdAt).getTime();
     return ts >= start.getTime() && ts < end.getTime();
@@ -226,8 +385,8 @@ function toLocalDateKey(input: Date) {
   return `${year}-${month}-${day}`;
 }
 
-export function getDailyActivity(userId: string) {
-  const attempts = getAttemptsByUser(userId);
+export async function getDailyActivity(userId: string) {
+  const attempts = await getAttemptsByUser(userId);
   const map = new Map<string, number>();
   attempts.forEach((attempt) => {
     const key = toLocalDateKey(new Date(attempt.createdAt));
@@ -236,8 +395,8 @@ export function getDailyActivity(userId: string) {
   return map;
 }
 
-export function getStreak(userId: string) {
-  const activity = getDailyActivity(userId);
+export async function getStreak(userId: string) {
+  const activity = await getDailyActivity(userId);
   let streak = 0;
   const cursor = new Date();
   while (activity.has(toLocalDateKey(cursor))) {
@@ -247,8 +406,8 @@ export function getStreak(userId: string) {
   return streak;
 }
 
-export function getAccuracyLastDays(userId: string, days: number) {
-  const attempts = getAttemptsByUser(userId);
+export async function getAccuracyLastDays(userId: string, days: number) {
+  const attempts = await getAttemptsByUser(userId);
   const since = Date.now() - days * 24 * 60 * 60 * 1000;
   const recent = attempts.filter((a) => new Date(a.createdAt).getTime() >= since);
   const total = recent.length;
@@ -260,8 +419,8 @@ export function getAccuracyLastDays(userId: string, days: number) {
   };
 }
 
-export function getDailyAccuracy(userId: string, days: number) {
-  const attempts = getAttemptsByUser(userId);
+export async function getDailyAccuracy(userId: string, days: number) {
+  const attempts = await getAttemptsByUser(userId);
   const buckets = new Map<string, { correct: number; total: number }>();
   attempts.forEach((attempt) => {
     const key = toLocalDateKey(new Date(attempt.createdAt));
@@ -287,10 +446,10 @@ export function getDailyAccuracy(userId: string, days: number) {
   return result;
 }
 
-export function getBadges(userId: string) {
-  const attempts = getAttemptsByUser(userId);
-  const streak = getStreak(userId);
-  const weekly = getAccuracyLastDays(userId, 7);
+export async function getBadges(userId: string) {
+  const attempts = await getAttemptsByUser(userId);
+  const streak = await getStreak(userId);
+  const weekly = await getAccuracyLastDays(userId, 7);
   const badges: { id: string; title: string; description: string }[] = [];
 
   if (attempts.length >= 1) {

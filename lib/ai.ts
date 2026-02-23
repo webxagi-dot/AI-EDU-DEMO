@@ -85,8 +85,8 @@ export async function generateAssistAnswer(payload: AssistPayload): Promise<Assi
   const subject = payload.subject;
   const grade = payload.grade;
 
-  const relatedQuestion = retrieveSimilarQuestion(question, subject, grade);
-  const relatedKps = retrieveKnowledgePoints(question, subject, grade);
+  const relatedQuestion = await retrieveSimilarQuestion(question, subject, grade);
+  const relatedKps = await retrieveKnowledgePoints(question, subject, grade);
 
   const contextLines = [];
   if (relatedQuestion) {

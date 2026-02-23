@@ -3,7 +3,7 @@ import { createQuestion } from "@/lib/content";
 import { requireRole } from "@/lib/guard";
 
 export async function POST(request: Request) {
-  const user = requireRole("admin");
+  const user = await requireRole("admin");
   if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
@@ -27,12 +27,12 @@ export async function POST(request: Request) {
   const created: string[] = [];
   const failed: { index: number; reason: string }[] = [];
 
-  body.items.forEach((item, index) => {
+  for (const [index, item] of body.items.entries()) {
     if (!item.subject || !item.grade || !item.knowledgePointId || !item.stem || !item.options?.length || !item.answer) {
       failed.push({ index, reason: "missing fields" });
-      return;
+      continue;
     }
-    const next = createQuestion({
+    const next = await createQuestion({
       subject: item.subject as any,
       grade: item.grade,
       knowledgePointId: item.knowledgePointId,
@@ -41,8 +41,8 @@ export async function POST(request: Request) {
       answer: item.answer,
       explanation: item.explanation ?? ""
     });
-    created.push(next.id);
-  });
+    if (next?.id) created.push(next.id);
+  }
 
   return NextResponse.json({ created: created.length, failed });
 }

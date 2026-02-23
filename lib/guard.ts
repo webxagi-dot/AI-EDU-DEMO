@@ -1,8 +1,8 @@
 import { getCurrentUser } from "./auth";
 import type { UserRole } from "./auth";
 
-export function requireRole(role: UserRole) {
-  const user = getCurrentUser();
+export async function requireRole(role: UserRole) {
+  const user = await getCurrentUser();
   if (!user || user.role !== role) {
     return null;
   }

@@ -4,32 +4,36 @@ import { getStudentProfile } from "@/lib/profiles";
 import { getDailyAccuracy, getStatsBetween, getWeakKnowledgePoints, getWeeklyStats } from "@/lib/progress";
 
 export async function GET() {
-  const student = getStudentContext();
+  const student = await getStudentContext();
   if (!student) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const stats = getWeeklyStats(student.id);
-  const profile = getStudentProfile(student.id);
+  const stats = await getWeeklyStats(student.id);
+  const profile = await getStudentProfile(student.id);
   const subjects = profile?.subjects?.length ? profile.subjects : ["math"];
   const end = new Date();
   const start = new Date();
   start.setDate(end.getDate() - 7);
   const prevStart = new Date();
   prevStart.setDate(end.getDate() - 14);
-  const previousStats = getStatsBetween(student.id, prevStart, start);
-  const trend = getDailyAccuracy(student.id, 7);
+  const previousStats = await getStatsBetween(student.id, prevStart, start);
+  const trend = await getDailyAccuracy(student.id, 7);
 
-  const weakPoints = subjects
-    .flatMap((subject) =>
-      getWeakKnowledgePoints(student.id, subject).map((item) => ({
-        id: item.kp.id,
-        title: item.kp.title,
-        ratio: Math.round(item.ratio * 100),
-        total: item.total,
-        subject
-      }))
+  const weakPoints = (
+    await Promise.all(
+      subjects.map(async (subject) =>
+        (await getWeakKnowledgePoints(student.id, subject)).map((item) => ({
+          id: item.kp.id,
+          title: item.kp.title,
+          ratio: Math.round(item.ratio * 100),
+          total: item.total,
+          subject
+        }))
+      )
     )
+  )
+    .flat()
     .sort((a, b) => a.ratio - b.ratio)
     .slice(0, 5);
 

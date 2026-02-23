@@ -33,6 +33,37 @@ npm run dev
 - 题库批量导入（CSV）
 - 知识点树可视化
 
+## 数据库接入
+
+项目支持 PostgreSQL。配置步骤：
+
+1. 创建数据库并执行 `db/schema.sql`
+2. 设置环境变量：
+
+```
+DATABASE_URL=postgres://user:password@host:5432/dbname
+DB_SSL=false
+```
+
+3. 可选：导入示例数据
+
+```
+node scripts/seed-db.mjs
+```
+
+### Render 快速接入
+
+1. 在 Render 创建 PostgreSQL 服务
+2. 将连接串配置为环境变量 `DATABASE_URL`
+3. 进入 Render Shell 或本地执行：
+
+```
+psql "$DATABASE_URL" -f db/schema.sql
+node scripts/seed-db.mjs
+```
+
+启用数据库后，系统将不再读取 `data/*.json`。
+
 ## AI 配置（可选）
 
 默认使用 mock 讲解。若需要接入模型，设置以下环境变量：

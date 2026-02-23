@@ -3,16 +3,16 @@ import { getCurrentUser } from "@/lib/auth";
 import { addHistoryItem, getHistoryByUser } from "@/lib/ai-history";
 
 export async function GET() {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const list = getHistoryByUser(user.id);
+  const list = await getHistoryByUser(user.id);
   return NextResponse.json({ data: list });
 }
 
 export async function POST(request: Request) {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "missing fields" }, { status: 400 });
   }
 
-  const next = addHistoryItem({
+  const next = await addHistoryItem({
     userId: user.id,
     question: body.question,
     answer: body.answer,

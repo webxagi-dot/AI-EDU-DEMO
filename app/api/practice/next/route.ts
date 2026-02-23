@@ -5,7 +5,7 @@ import { getQuestions } from "@/lib/content";
 import { getStudentProfile } from "@/lib/profiles";
 
 export async function POST(request: Request) {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user || user.role !== "student") {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
@@ -17,12 +17,12 @@ export async function POST(request: Request) {
     mode?: string;
   };
   const subject = body.subject ?? "math";
-  const profile = getStudentProfile(user.id);
+  const profile = await getStudentProfile(user.id);
   const grade = body.grade ?? profile?.grade ?? (user.grade ?? "4");
-  let questions = getPracticeQuestions(subject, grade, body.knowledgePointId);
+  let questions = await getPracticeQuestions(subject, grade, body.knowledgePointId);
   if (body.mode === "wrong") {
-    const wrongIds = getWrongQuestionIds(user.id);
-    const all = getQuestions();
+    const wrongIds = await getWrongQuestionIds(user.id);
+    const all = await getQuestions();
     questions = all.filter(
       (q) =>
         wrongIds.includes(q.id) &&

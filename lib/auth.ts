@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { cookies } from "next/headers";
 import { readJson, writeJson } from "./storage";
+import { isDbEnabled, query, queryOne } from "./db";
 
 export type UserRole = "student" | "parent" | "admin";
 
@@ -26,20 +27,66 @@ const SESSION_FILE = "sessions.json";
 const SESSION_COOKIE = "mvp_session";
 const SESSION_TTL_DAYS = 7;
 
-export function getUsers(): User[] {
-  return readJson<User[]>(USER_FILE, []);
+type DbUser = {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  password: string;
+  grade: string | null;
+  student_id: string | null;
+};
+
+type DbSession = {
+  id: string;
+  user_id: string;
+  role: UserRole;
+  expires_at: string;
+};
+
+function mapUser(row: DbUser): User {
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    role: row.role,
+    password: row.password,
+    grade: row.grade ?? undefined,
+    studentId: row.student_id ?? undefined
+  };
 }
 
-export function saveUsers(users: User[]) {
-  writeJson(USER_FILE, users);
+export async function getUsers(): Promise<User[]> {
+  if (!isDbEnabled()) {
+    return readJson<User[]>(USER_FILE, []);
+  }
+  const rows = await query<DbUser>("SELECT * FROM users");
+  return rows.map(mapUser);
 }
 
-export function getSessions(): Session[] {
-  return readJson<Session[]>(SESSION_FILE, []);
+export async function saveUsers(users: User[]) {
+  if (!isDbEnabled()) {
+    writeJson(USER_FILE, users);
+  }
 }
 
-export function saveSessions(sessions: Session[]) {
-  writeJson(SESSION_FILE, sessions);
+export async function getSessions(): Promise<Session[]> {
+  if (!isDbEnabled()) {
+    return readJson<Session[]>(SESSION_FILE, []);
+  }
+  const rows = await query<DbSession>("SELECT * FROM sessions");
+  return rows.map((row) => ({
+    id: row.id,
+    userId: row.user_id,
+    role: row.role,
+    expiresAt: row.expires_at
+  }));
+}
+
+export async function saveSessions(sessions: Session[]) {
+  if (!isDbEnabled()) {
+    writeJson(SESSION_FILE, sessions);
+  }
 }
 
 export function verifyPassword(input: string, stored: string) {
@@ -57,31 +104,80 @@ export function verifyPassword(input: string, stored: string) {
   return crypto.timingSafeEqual(hashBuf, derivedBuf);
 }
 
-export function createSession(user: User) {
-  const sessions = getSessions();
+export async function createUser(user: User) {
+  if (!isDbEnabled()) {
+    const users = await getUsers();
+    users.push(user);
+    await saveUsers(users);
+    return user;
+  }
+
+  await query(
+    `INSERT INTO users (id, email, name, role, password, grade, student_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [
+      user.id,
+      user.email,
+      user.name,
+      user.role,
+      user.password,
+      user.grade ?? null,
+      user.studentId ?? null
+    ]
+  );
+  return user;
+}
+
+export async function createSession(user: User) {
   const id = crypto.randomBytes(18).toString("hex");
   const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString();
-  const nextSessions = sessions.filter((session) => session.userId !== user.id);
-  nextSessions.push({ id, userId: user.id, role: user.role, expiresAt });
-  saveSessions(nextSessions);
+
+  if (!isDbEnabled()) {
+    const sessions = await getSessions();
+    const nextSessions = sessions.filter((session) => session.userId !== user.id);
+    nextSessions.push({ id, userId: user.id, role: user.role, expiresAt });
+    await saveSessions(nextSessions);
+    return { id, expiresAt };
+  }
+
+  await query("DELETE FROM sessions WHERE user_id = $1", [user.id]);
+  await query(
+    "INSERT INTO sessions (id, user_id, role, expires_at) VALUES ($1, $2, $3, $4)",
+    [id, user.id, user.role, expiresAt]
+  );
   return { id, expiresAt };
 }
 
-export function getSessionByToken(token?: string | null) {
+export async function getSessionByToken(token?: string | null) {
   if (!token) return null;
-  const sessions = getSessions();
-  const session = sessions.find((item) => item.id === token);
-  if (!session) return null;
-  if (new Date(session.expiresAt).getTime() < Date.now()) {
-    removeSession(token);
+
+  if (!isDbEnabled()) {
+    const sessions = await getSessions();
+    const session = sessions.find((item) => item.id === token);
+    if (!session) return null;
+    if (new Date(session.expiresAt).getTime() < Date.now()) {
+      await removeSession(token);
+      return null;
+    }
+    return session;
+  }
+
+  const row = await queryOne<DbSession>("SELECT * FROM sessions WHERE id = $1", [token]);
+  if (!row) return null;
+  if (new Date(row.expires_at).getTime() < Date.now()) {
+    await removeSession(token);
     return null;
   }
-  return session;
+  return { id: row.id, userId: row.user_id, role: row.role, expiresAt: row.expires_at };
 }
 
-export function removeSession(token: string) {
-  const sessions = getSessions();
-  saveSessions(sessions.filter((item) => item.id !== token));
+export async function removeSession(token: string) {
+  if (!isDbEnabled()) {
+    const sessions = await getSessions();
+    await saveSessions(sessions.filter((item) => item.id !== token));
+    return;
+  }
+  await query("DELETE FROM sessions WHERE id = $1", [token]);
 }
 
 export function setSessionCookie(response: Response, token: string) {
@@ -108,20 +204,33 @@ export function clearSessionCookie(response: Response) {
   }
 }
 
-export function getCurrentUser() {
+export async function getCurrentUser() {
   const cookieStore = cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
-  const session = getSessionByToken(token);
+  const session = await getSessionByToken(token);
   if (!session) return null;
-  const users = getUsers();
-  const user = users.find((item) => item.id === session.userId);
+  const user = await getUserById(session.userId);
   if (!user) return null;
   const { password, ...safeUser } = user;
   return safeUser;
 }
 
-export function getUserByEmail(email: string) {
-  return getUsers().find((user) => user.email.toLowerCase() === email.toLowerCase()) ?? null;
+export async function getUserById(id: string) {
+  if (!isDbEnabled()) {
+    const users = await getUsers();
+    return users.find((item) => item.id === id) ?? null;
+  }
+  const row = await queryOne<DbUser>("SELECT * FROM users WHERE id = $1", [id]);
+  return row ? mapUser(row) : null;
+}
+
+export async function getUserByEmail(email: string) {
+  if (!isDbEnabled()) {
+    const users = await getUsers();
+    return users.find((user) => user.email.toLowerCase() === email.toLowerCase()) ?? null;
+  }
+  const row = await queryOne<DbUser>("SELECT * FROM users WHERE lower(email) = lower($1)", [email]);
+  return row ? mapUser(row) : null;
 }
 
 export function getSessionCookieName() {
