@@ -1,12 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Card from "@/components/Card";
+
+type HistoryItem = {
+  id: string;
+  question: string;
+  answer: string;
+  createdAt: string;
+  favorite: boolean;
+  tags: string[];
+};
 
 export default function TutorPage() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [showFavorites, setShowFavorites] = useState(false);
 
   async function handleAsk() {
     if (!question) return;
@@ -18,8 +29,57 @@ export default function TutorPage() {
     });
     const data = await res.json();
     setAnswer(data);
+    if (data?.answer) {
+      const historyRes = await fetch("/api/ai/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, answer: data.answer })
+      });
+      const historyData = await historyRes.json();
+      if (historyData?.data) {
+        setHistory((prev) => [historyData.data, ...prev]);
+      }
+    }
     setLoading(false);
   }
+
+  useEffect(() => {
+    fetch("/api/ai/history")
+      .then((res) => res.json())
+      .then((data) => setHistory(data.data ?? []));
+  }, []);
+
+  async function toggleFavorite(item: HistoryItem) {
+    const res = await fetch(`/api/ai/history/${item.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ favorite: !item.favorite })
+    });
+    const data = await res.json();
+    if (data?.data) {
+      setHistory((prev) => prev.map((h) => (h.id === item.id ? data.data : h)));
+    }
+  }
+
+  async function editTags(item: HistoryItem) {
+    const input = prompt("输入标签（用逗号分隔）", item.tags?.join(",") ?? "");
+    if (input === null) return;
+    const tags = input
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+    const res = await fetch(`/api/ai/history/${item.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tags })
+    });
+    const data = await res.json();
+    if (data?.data) {
+      setHistory((prev) => prev.map((h) => (h.id === item.id ? data.data : h)));
+    }
+  }
+
+  const filteredHistory = showFavorites ? history.filter((item) => item.favorite) : history;
 
   return (
     <div className="grid" style={{ gap: 18 }}>
@@ -69,6 +129,39 @@ export default function TutorPage() {
           ) : null}
         </Card>
       ) : null}
+
+      <Card title="AI 对话历史">
+        <div className="cta-row">
+          <button className="button secondary" onClick={() => setShowFavorites((prev) => !prev)}>
+            {showFavorites ? "查看全部" : "只看收藏"}
+          </button>
+        </div>
+        <div className="grid" style={{ gap: 10, marginTop: 12 }}>
+          {filteredHistory.length === 0 ? <p>暂无历史记录。</p> : null}
+          {filteredHistory.map((item) => (
+            <div className="card" key={item.id}>
+              <div className="section-title">{item.question}</div>
+              <p style={{ color: "var(--ink-1)" }}>{item.answer}</p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                <button className="button secondary" onClick={() => toggleFavorite(item)}>
+                  {item.favorite ? "已收藏" : "收藏"}
+                </button>
+                <button className="button secondary" onClick={() => editTags(item)}>
+                  编辑标签
+                </button>
+                <div style={{ fontSize: 12, color: "var(--ink-1)" }}>
+                  {new Date(item.createdAt).toLocaleString("zh-CN")}
+                </div>
+              </div>
+              {item.tags?.length ? (
+                <div style={{ marginTop: 6, fontSize: 12 }}>
+                  标签：{item.tags.join("、")}
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }

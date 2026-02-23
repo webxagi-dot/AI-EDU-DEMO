@@ -15,6 +15,9 @@ export default function AdminPage() {
         <Link className="button secondary" href="/admin/knowledge-points" style={{ marginTop: 12 }}>
           管理知识点
         </Link>
+        <Link className="button secondary" href="/admin/knowledge-tree" style={{ marginTop: 12 }}>
+          查看知识点树
+        </Link>
       </Card>
       <Card title="学生概览">
         <p>本周活跃 128 人，完成诊断 72 人。</p>

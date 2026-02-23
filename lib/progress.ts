@@ -204,6 +204,21 @@ export function getWeeklyStats(userId: string) {
   };
 }
 
+export function getStatsBetween(userId: string, start: Date, end: Date) {
+  const attempts = getAttemptsByUser(userId);
+  const recent = attempts.filter((a) => {
+    const ts = new Date(a.createdAt).getTime();
+    return ts >= start.getTime() && ts < end.getTime();
+  });
+  const total = recent.length;
+  const correct = recent.filter((a) => a.correct).length;
+  return {
+    total,
+    correct,
+    accuracy: total === 0 ? 0 : Math.round((correct / total) * 100)
+  };
+}
+
 function toLocalDateKey(input: Date) {
   const year = input.getFullYear();
   const month = String(input.getMonth() + 1).padStart(2, "0");
@@ -243,6 +258,33 @@ export function getAccuracyLastDays(userId: string, days: number) {
     correct,
     accuracy: total === 0 ? 0 : Math.round((correct / total) * 100)
   };
+}
+
+export function getDailyAccuracy(userId: string, days: number) {
+  const attempts = getAttemptsByUser(userId);
+  const buckets = new Map<string, { correct: number; total: number }>();
+  attempts.forEach((attempt) => {
+    const key = toLocalDateKey(new Date(attempt.createdAt));
+    const current = buckets.get(key) ?? { correct: 0, total: 0 };
+    current.total += 1;
+    current.correct += attempt.correct ? 1 : 0;
+    buckets.set(key, current);
+  });
+
+  const result: { date: string; total: number; correct: number; accuracy: number }[] = [];
+  const cursor = new Date();
+  for (let i = 0; i < days; i += 1) {
+    const dateKey = toLocalDateKey(new Date(cursor));
+    const stat = buckets.get(dateKey) ?? { correct: 0, total: 0 };
+    result.unshift({
+      date: dateKey,
+      total: stat.total,
+      correct: stat.correct,
+      accuracy: stat.total === 0 ? 0 : Math.round((stat.correct / stat.total) * 100)
+    });
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return result;
 }
 
 export function getBadges(userId: string) {

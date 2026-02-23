@@ -28,6 +28,16 @@ export default function ParentPage() {
           <Stat label="完成题量" value={`${report.stats.total} 题`} helper="近 7 天" />
           <Stat label="正确率" value={`${report.stats.accuracy}%`} helper="近 7 天" />
         </div>
+        <div className="grid grid-2" style={{ marginTop: 12 }}>
+          <div className="card">
+            <div className="section-title">上周完成题量</div>
+            <p>{report.previousStats?.total ?? 0} 题</p>
+          </div>
+          <div className="card">
+            <div className="section-title">上周正确率</div>
+            <p>{report.previousStats?.accuracy ?? 0}%</p>
+          </div>
+        </div>
       </Card>
       <Card title="薄弱点与建议">
         <div className="grid" style={{ gap: 8 }}>
@@ -43,6 +53,16 @@ export default function ParentPage() {
             <p>暂无薄弱点数据。</p>
           )}
         </div>
+        {report.suggestions?.length ? (
+          <div style={{ marginTop: 12 }}>
+            <div className="badge">本周建议</div>
+            <div className="grid" style={{ gap: 6, marginTop: 8 }}>
+              {report.suggestions.map((item: string, idx: number) => (
+                <div key={`${item}-${idx}`}>{item}</div>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </Card>
     </div>
   );

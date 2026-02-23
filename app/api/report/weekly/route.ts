@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStudentContext } from "@/lib/user-context";
-import { getWeakKnowledgePoints, getWeeklyStats } from "@/lib/progress";
+import { getStudentProfile } from "@/lib/profiles";
+import { getDailyAccuracy, getStatsBetween, getWeakKnowledgePoints, getWeeklyStats } from "@/lib/progress";
 
 export async function GET() {
   const student = getStudentContext();
@@ -9,16 +10,51 @@ export async function GET() {
   }
 
   const stats = getWeeklyStats(student.id);
-  const weakMath = getWeakKnowledgePoints(student.id, "math");
+  const profile = getStudentProfile(student.id);
+  const subjects = profile?.subjects?.length ? profile.subjects : ["math"];
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - 7);
+  const prevStart = new Date();
+  prevStart.setDate(end.getDate() - 14);
+  const previousStats = getStatsBetween(student.id, prevStart, start);
+  const trend = getDailyAccuracy(student.id, 7);
+
+  const weakPoints = subjects
+    .flatMap((subject) =>
+      getWeakKnowledgePoints(student.id, subject).map((item) => ({
+        id: item.kp.id,
+        title: item.kp.title,
+        ratio: Math.round(item.ratio * 100),
+        total: item.total,
+        subject
+      }))
+    )
+    .sort((a, b) => a.ratio - b.ratio)
+    .slice(0, 5);
+
+  const suggestions: string[] = [];
+  if (stats.total < 5) {
+    suggestions.push("本周练习偏少，建议每天完成 5-8 题。");
+  }
+  if (stats.accuracy < 60) {
+    suggestions.push("正确率偏低，建议先巩固基础知识点，再逐步提升难度。");
+  }
+  if (stats.accuracy >= previousStats.accuracy + 5) {
+    suggestions.push("正确率提升明显，继续保持当前节奏。");
+  } else if (stats.accuracy + 5 < previousStats.accuracy) {
+    suggestions.push("正确率有所下降，建议复盘错因并进行错题专练。");
+  }
+  if (weakPoints.length) {
+    suggestions.push(`优先巩固：${weakPoints[0].title}。`);
+  }
 
   return NextResponse.json({
     student: { id: student.id, name: student.name, grade: student.grade },
     stats,
-    weakPoints: weakMath.map((item) => ({
-      id: item.kp.id,
-      title: item.kp.title,
-      ratio: Math.round(item.ratio * 100),
-      total: item.total
-    }))
+    previousStats,
+    trend,
+    weakPoints,
+    suggestions
   });
 }
