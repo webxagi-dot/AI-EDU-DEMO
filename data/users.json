@@ -28,5 +28,275 @@
     "name": "刘老师",
     "role": "teacher",
     "password": "plain:Teacher123"
+  },
+  {
+    "id": "u-teacher-bulk-001",
+    "email": "teacher1@demo.com",
+    "name": "老师1",
+    "role": "teacher",
+    "password": "plain:Teacher123"
+  },
+  {
+    "id": "u-teacher-bulk-002",
+    "email": "teacher2@demo.com",
+    "name": "老师2",
+    "role": "teacher",
+    "password": "plain:Teacher123"
+  },
+  {
+    "id": "u-student-bulk-001",
+    "email": "student1@demo.com",
+    "name": "学生1",
+    "role": "student",
+    "grade": "4",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-002",
+    "email": "student2@demo.com",
+    "name": "学生2",
+    "role": "student",
+    "grade": "7",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-003",
+    "email": "student3@demo.com",
+    "name": "学生3",
+    "role": "student",
+    "grade": "10",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-004",
+    "email": "student4@demo.com",
+    "name": "学生4",
+    "role": "student",
+    "grade": "4",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-005",
+    "email": "student5@demo.com",
+    "name": "学生5",
+    "role": "student",
+    "grade": "7",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-006",
+    "email": "student6@demo.com",
+    "name": "学生6",
+    "role": "student",
+    "grade": "10",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-007",
+    "email": "student7@demo.com",
+    "name": "学生7",
+    "role": "student",
+    "grade": "4",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-008",
+    "email": "student8@demo.com",
+    "name": "学生8",
+    "role": "student",
+    "grade": "7",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-009",
+    "email": "student9@demo.com",
+    "name": "学生9",
+    "role": "student",
+    "grade": "10",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-010",
+    "email": "student10@demo.com",
+    "name": "学生10",
+    "role": "student",
+    "grade": "4",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-011",
+    "email": "student11@demo.com",
+    "name": "学生11",
+    "role": "student",
+    "grade": "7",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-012",
+    "email": "student12@demo.com",
+    "name": "学生12",
+    "role": "student",
+    "grade": "10",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-013",
+    "email": "student13@demo.com",
+    "name": "学生13",
+    "role": "student",
+    "grade": "4",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-014",
+    "email": "student14@demo.com",
+    "name": "学生14",
+    "role": "student",
+    "grade": "7",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-015",
+    "email": "student15@demo.com",
+    "name": "学生15",
+    "role": "student",
+    "grade": "10",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-016",
+    "email": "student16@demo.com",
+    "name": "学生16",
+    "role": "student",
+    "grade": "4",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-017",
+    "email": "student17@demo.com",
+    "name": "学生17",
+    "role": "student",
+    "grade": "7",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-018",
+    "email": "student18@demo.com",
+    "name": "学生18",
+    "role": "student",
+    "grade": "10",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-019",
+    "email": "student19@demo.com",
+    "name": "学生19",
+    "role": "student",
+    "grade": "4",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-020",
+    "email": "student20@demo.com",
+    "name": "学生20",
+    "role": "student",
+    "grade": "7",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-021",
+    "email": "student21@demo.com",
+    "name": "学生21",
+    "role": "student",
+    "grade": "10",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-022",
+    "email": "student22@demo.com",
+    "name": "学生22",
+    "role": "student",
+    "grade": "4",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-023",
+    "email": "student23@demo.com",
+    "name": "学生23",
+    "role": "student",
+    "grade": "7",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-student-bulk-024",
+    "email": "student24@demo.com",
+    "name": "学生24",
+    "role": "student",
+    "grade": "10",
+    "password": "plain:Student123"
+  },
+  {
+    "id": "u-parent-bulk-001",
+    "email": "parent1@demo.com",
+    "name": "家长1",
+    "role": "parent",
+    "studentId": "u-student-bulk-001",
+    "password": "plain:Parent123"
+  },
+  {
+    "id": "u-parent-bulk-002",
+    "email": "parent2@demo.com",
+    "name": "家长2",
+    "role": "parent",
+    "studentId": "u-student-bulk-002",
+    "password": "plain:Parent123"
+  },
+  {
+    "id": "u-parent-bulk-003",
+    "email": "parent3@demo.com",
+    "name": "家长3",
+    "role": "parent",
+    "studentId": "u-student-bulk-003",
+    "password": "plain:Parent123"
+  },
+  {
+    "id": "u-parent-bulk-004",
+    "email": "parent4@demo.com",
+    "name": "家长4",
+    "role": "parent",
+    "studentId": "u-student-bulk-004",
+    "password": "plain:Parent123"
+  },
+  {
+    "id": "u-parent-bulk-005",
+    "email": "parent5@demo.com",
+    "name": "家长5",
+    "role": "parent",
+    "studentId": "u-student-bulk-005",
+    "password": "plain:Parent123"
+  },
+  {
+    "id": "u-parent-bulk-006",
+    "email": "parent6@demo.com",
+    "name": "家长6",
+    "role": "parent",
+    "studentId": "u-student-bulk-006",
+    "password": "plain:Parent123"
+  },
+  {
+    "id": "u-parent-bulk-007",
+    "email": "parent7@demo.com",
+    "name": "家长7",
+    "role": "parent",
+    "studentId": "u-student-bulk-007",
+    "password": "plain:Parent123"
+  },
+  {
+    "id": "u-parent-bulk-008",
+    "email": "parent8@demo.com",
+    "name": "家长8",
+    "role": "parent",
+    "studentId": "u-student-bulk-008",
+    "password": "plain:Parent123"
   }
 ]

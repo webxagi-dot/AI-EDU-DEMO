@@ -1,0 +1,42 @@
+[
+  {
+    "id": "notice-bulk-1",
+    "userId": "u-student-bulk-001",
+    "title": "测试通知",
+    "content": "已生成批量测试数据，请开始体验。",
+    "type": "info",
+    "createdAt": "2026-02-24T17:18:39.618Z"
+  },
+  {
+    "id": "notice-bulk-2",
+    "userId": "u-student-bulk-002",
+    "title": "测试通知",
+    "content": "已生成批量测试数据，请开始体验。",
+    "type": "info",
+    "createdAt": "2026-02-24T17:18:39.618Z"
+  },
+  {
+    "id": "notice-bulk-3",
+    "userId": "u-student-bulk-003",
+    "title": "测试通知",
+    "content": "已生成批量测试数据，请开始体验。",
+    "type": "info",
+    "createdAt": "2026-02-24T17:18:39.618Z"
+  },
+  {
+    "id": "notice-bulk-4",
+    "userId": "u-student-bulk-004",
+    "title": "测试通知",
+    "content": "已生成批量测试数据，请开始体验。",
+    "type": "info",
+    "createdAt": "2026-02-24T17:18:39.618Z"
+  },
+  {
+    "id": "notice-bulk-5",
+    "userId": "u-student-bulk-005",
+    "title": "测试通知",
+    "content": "已生成批量测试数据，请开始体验。",
+    "type": "info",
+    "createdAt": "2026-02-24T17:18:39.618Z"
+  }
+]
