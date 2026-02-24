@@ -19,6 +19,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <nav className="nav-links">
               <Link href="/student">学生端</Link>
               <Link href="/teacher">教师端</Link>
+              <Link href="/teacher/gradebook">成绩册</Link>
               <Link href="/diagnostic">诊断测评</Link>
               <Link href="/tutor">AI 辅导</Link>
               <Link href="/coach">学习陪练</Link>

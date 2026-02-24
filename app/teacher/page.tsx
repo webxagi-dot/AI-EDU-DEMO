@@ -306,7 +306,7 @@ export default function TeacherPage() {
         </div>
       </Card>
 
-      <div className="grid grid-2">
+      <div className="grid grid-3">
         <Card title="AI 教学工具" tag="智能">
           <div className="feature-card">
             <EduIcon name="brain" />
@@ -323,6 +323,15 @@ export default function TeacherPage() {
           </div>
           <Link className="button secondary" href="/teacher/analysis" style={{ marginTop: 12 }}>
             查看分析
+          </Link>
+        </Card>
+        <Card title="成绩册" tag="Gradebook">
+          <div className="feature-card">
+            <EduIcon name="board" />
+            <p>查看班级作业完成情况、逾期与平均分。</p>
+          </div>
+          <Link className="button secondary" href="/teacher/gradebook" style={{ marginTop: 12 }}>
+            进入成绩册
           </Link>
         </Card>
       </div>

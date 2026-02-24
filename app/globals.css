@@ -370,6 +370,63 @@ textarea:focus {
   color: #9a5d0a;
 }
 
+.gradebook-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.gradebook-table th,
+.gradebook-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--stroke);
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.gradebook-table th {
+  font-size: 12px;
+  color: var(--ink-1);
+}
+
+.gradebook-table tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.gradebook-sub {
+  font-size: 11px;
+  color: var(--ink-1);
+}
+
+.gradebook-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  border: 1px solid transparent;
+}
+
+.gradebook-pill.pending {
+  background: rgba(244, 208, 111, 0.18);
+  border-color: rgba(244, 208, 111, 0.45);
+  color: #9a5d0a;
+}
+
+.gradebook-pill.overdue {
+  background: rgba(180, 35, 24, 0.12);
+  border-color: rgba(180, 35, 24, 0.3);
+  color: #b42318;
+}
+
+.gradebook-pill.done {
+  background: rgba(27, 108, 168, 0.12);
+  border-color: rgba(27, 108, 168, 0.28);
+  color: var(--brand-0);
+}
+
 .edu-icon {
   display: inline-flex;
   width: 40px;
