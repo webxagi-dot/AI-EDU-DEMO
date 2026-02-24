@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser, getParentsByStudentId, getUserById } from "@/lib/auth";
-import { getClassById } from "@/lib/classes";
+import { getClassById, getClassStudentIds } from "@/lib/classes";
 import { getAssignmentById, getAssignmentItems, getAssignmentSubmission } from "@/lib/assignments";
 import { getQuestions } from "@/lib/content";
 import { createNotification } from "@/lib/notifications";
@@ -26,6 +26,10 @@ export async function GET(_: Request, context: { params: { id: string; studentId
   const klass = await getClassById(assignment.classId);
   if (!klass || klass.teacherId !== user.id) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
+  }
+  const studentIds = await getClassStudentIds(klass.id);
+  if (!studentIds.includes(studentId)) {
+    return NextResponse.json({ error: "student not in class" }, { status: 404 });
   }
 
   const student = await getUserById(studentId);
@@ -88,6 +92,10 @@ export async function POST(request: Request, context: { params: { id: string; st
   const klass = await getClassById(assignment.classId);
   if (!klass || klass.teacherId !== user.id) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
+  }
+  const studentIds = await getClassStudentIds(klass.id);
+  if (!studentIds.includes(studentId)) {
+    return NextResponse.json({ error: "student not in class" }, { status: 404 });
   }
 
   const body = (await request.json()) as {

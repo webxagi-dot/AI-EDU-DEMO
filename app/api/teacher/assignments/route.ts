@@ -86,12 +86,13 @@ export async function POST(request: Request) {
     mode?: "bank" | "ai";
     difficulty?: Difficulty;
     questionType?: string;
-    submissionType?: "quiz" | "upload";
+    submissionType?: "quiz" | "upload" | "essay";
     maxUploads?: number;
     gradingFocus?: string;
   };
 
-  const submissionType = body.submissionType === "upload" ? "upload" : "quiz";
+  const submissionType =
+    body.submissionType === "upload" ? "upload" : body.submissionType === "essay" ? "essay" : "quiz";
   const questionCount = Number(body.questionCount ?? 0);
   if (!body.classId || !body.title || (submissionType === "quiz" && questionCount <= 0)) {
     return NextResponse.json({ error: "missing fields" }, { status: 400 });

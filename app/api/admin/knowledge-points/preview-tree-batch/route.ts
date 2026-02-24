@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/guard";
 import { generateKnowledgeTreeDraft } from "@/lib/ai";
 import type { Subject } from "@/lib/types";
+import { SUBJECT_OPTIONS } from "@/lib/constants";
 export const dynamic = "force-dynamic";
 
-const ALLOWED_SUBJECTS: Subject[] = ["math", "chinese", "english"];
+const ALLOWED_SUBJECTS: Subject[] = SUBJECT_OPTIONS.map((item) => item.value as Subject);
 
 export async function POST(request: Request) {
   const user = await requireRole("admin");

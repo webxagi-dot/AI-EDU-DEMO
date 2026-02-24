@@ -19,7 +19,7 @@ export async function GET(_: Request, context: { params: { id: string } }) {
   if (!assignment) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
-  if (assignment.submissionType !== "upload") {
+  if (assignment.submissionType !== "upload" && assignment.submissionType !== "essay") {
     return NextResponse.json({ error: "该作业不支持上传" }, { status: 400 });
   }
 
@@ -42,7 +42,7 @@ export async function POST(request: Request, context: { params: { id: string } }
   if (!assignment) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
-  if (assignment.submissionType !== "upload") {
+  if (assignment.submissionType !== "upload" && assignment.submissionType !== "essay") {
     return NextResponse.json({ error: "该作业不支持上传" }, { status: 400 });
   }
 
@@ -104,7 +104,7 @@ export async function DELETE(request: Request, context: { params: { id: string }
   if (!assignment) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
-  if (assignment.submissionType !== "upload") {
+  if (assignment.submissionType !== "upload" && assignment.submissionType !== "essay") {
     return NextResponse.json({ error: "该作业不支持上传" }, { status: 400 });
   }
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Card from "@/components/Card";
+import { GRADE_OPTIONS, SUBJECT_LABELS, SUBJECT_OPTIONS } from "@/lib/constants";
 
 type KnowledgePoint = {
   id: string;
@@ -37,8 +38,8 @@ export default function KnowledgePointsAdminPage() {
   const [treeMessage, setTreeMessage] = useState<string | null>(null);
   const [treeErrors, setTreeErrors] = useState<string[]>([]);
   const [batchForm, setBatchForm] = useState({
-    subjects: ["math", "chinese", "english"],
-    grades: ["1", "2", "3", "4", "5", "6"],
+    subjects: SUBJECT_OPTIONS.map((item) => item.value),
+    grades: GRADE_OPTIONS.map((item) => item.value),
     edition: "人教版",
     volume: "上册",
     unitCount: 6,
@@ -181,7 +182,11 @@ export default function KnowledgePointsAdminPage() {
     }
 
     if (data.failed?.length) {
-      setBatchError(data.failed.map((item: any) => `${item.subject}${item.grade}年级：${item.reason}`).join("；"));
+      setBatchError(
+        data.failed
+          .map((item: any) => `${SUBJECT_LABELS[item.subject] ?? item.subject}${item.grade}年级：${item.reason}`)
+          .join("；")
+      );
     }
     setBatchPreview(data.items ?? []);
     setBatchLoading(false);
@@ -233,21 +238,21 @@ export default function KnowledgePointsAdminPage() {
             <label>
               <div className="section-title">学科</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {["math", "chinese", "english"].map((subject) => (
-                  <label key={subject} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                {SUBJECT_OPTIONS.map((subject) => (
+                  <label key={subject.value} style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     <input
                       type="checkbox"
-                      checked={batchForm.subjects.includes(subject)}
+                      checked={batchForm.subjects.includes(subject.value)}
                       onChange={(event) => {
                         setBatchForm((prev) => ({
                           ...prev,
                           subjects: event.target.checked
-                            ? [...prev.subjects, subject]
-                            : prev.subjects.filter((item) => item !== subject)
+                            ? [...prev.subjects, subject.value]
+                            : prev.subjects.filter((item) => item !== subject.value)
                         }));
                       }}
                     />
-                    {subject === "math" ? "数学" : subject === "chinese" ? "语文" : "英语"}
+                    {subject.label}
                   </label>
                 ))}
               </div>
@@ -255,21 +260,21 @@ export default function KnowledgePointsAdminPage() {
             <label>
               <div className="section-title">年级</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {["1", "2", "3", "4", "5", "6"].map((grade) => (
-                  <label key={grade} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                {GRADE_OPTIONS.map((grade) => (
+                  <label key={grade.value} style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     <input
                       type="checkbox"
-                      checked={batchForm.grades.includes(grade)}
+                      checked={batchForm.grades.includes(grade.value)}
                       onChange={(event) => {
                         setBatchForm((prev) => ({
                           ...prev,
                           grades: event.target.checked
-                            ? [...prev.grades, grade]
-                            : prev.grades.filter((item) => item !== grade)
+                            ? [...prev.grades, grade.value]
+                            : prev.grades.filter((item) => item !== grade.value)
                         }));
                       }}
                     />
-                    {grade} 年级
+                    {grade.label}
                   </label>
                 ))}
               </div>
@@ -344,7 +349,7 @@ export default function KnowledgePointsAdminPage() {
               {batchPreview.map((item) => (
                 <div className="card" key={`${item.subject}-${item.grade}`}>
                   <div className="section-title">
-                    {item.subject} · {item.grade} 年级
+                    {SUBJECT_LABELS[item.subject] ?? item.subject} · {item.grade} 年级
                   </div>
                   {item.units?.slice(0, 3).map((unit: any) => (
                     <div key={unit.title} style={{ marginTop: 8 }}>
@@ -401,18 +406,26 @@ export default function KnowledgePointsAdminPage() {
               onChange={(event) => setTreeForm({ ...treeForm, subject: event.target.value })}
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
             >
-              <option value="math">数学</option>
-              <option value="chinese">语文</option>
-              <option value="english">英语</option>
+              {SUBJECT_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
             </select>
           </label>
           <label>
             <div className="section-title">年级</div>
-            <input
+            <select
               value={treeForm.grade}
               onChange={(event) => setTreeForm({ ...treeForm, grade: event.target.value })}
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
-            />
+            >
+              {GRADE_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             <div className="section-title">教材版本</div>
@@ -470,18 +483,26 @@ export default function KnowledgePointsAdminPage() {
               onChange={(event) => setAiForm({ ...aiForm, subject: event.target.value })}
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
             >
-              <option value="math">数学</option>
-              <option value="chinese">语文</option>
-              <option value="english">英语</option>
+              {SUBJECT_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
             </select>
           </label>
           <label>
             <div className="section-title">年级</div>
-            <input
+            <select
               value={aiForm.grade}
               onChange={(event) => setAiForm({ ...aiForm, grade: event.target.value })}
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
-            />
+            >
+              {GRADE_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             <div className="section-title">章节（可选）</div>
@@ -531,18 +552,26 @@ export default function KnowledgePointsAdminPage() {
               onChange={(event) => setForm({ ...form, subject: event.target.value })}
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
             >
-              <option value="math">数学</option>
-              <option value="chinese">语文</option>
-              <option value="english">英语</option>
+              {SUBJECT_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
             </select>
           </label>
           <label>
             <div className="section-title">年级</div>
-            <input
+            <select
               value={form.grade}
               onChange={(event) => setForm({ ...form, grade: event.target.value })}
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
-            />
+            >
+              {GRADE_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             <div className="section-title">单元</div>
@@ -583,7 +612,7 @@ export default function KnowledgePointsAdminPage() {
               <div>
                 <div className="section-title">{item.title}</div>
                 <div style={{ fontSize: 12, color: "var(--ink-1)" }}>
-                  {item.subject} · {item.grade} 年级 · {item.unit ?? "未分单元"} · {item.chapter}
+                  {SUBJECT_LABELS[item.subject] ?? item.subject} · {item.grade} 年级 · {item.unit ?? "未分单元"} · {item.chapter}
                 </div>
               </div>
               <button className="button secondary" onClick={() => handleDelete(item.id)}>

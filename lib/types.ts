@@ -1,4 +1,14 @@
-export type Subject = "math" | "chinese" | "english";
+export type Subject =
+  | "math"
+  | "chinese"
+  | "english"
+  | "science"
+  | "physics"
+  | "chemistry"
+  | "biology"
+  | "history"
+  | "geography"
+  | "politics";
 export type Difficulty = "easy" | "medium" | "hard";
 
 export type KnowledgePoint = {

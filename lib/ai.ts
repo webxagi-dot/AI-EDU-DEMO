@@ -89,6 +89,13 @@ export type HomeworkReview = {
   issues: string[];
   suggestions: string[];
   rubric: { item: string; score: number; comment: string }[];
+  writing?: {
+    scores: { structure: number; grammar: number; vocab: number };
+    summary: string;
+    strengths: string[];
+    improvements: string[];
+    corrected?: string;
+  };
   provider: string;
 };
 
@@ -123,10 +130,10 @@ export type GenerateKnowledgeTreePayload = {
 };
 
 const SYSTEM_PROMPT =
-  "你是小学课后辅导老师。请用简洁、清晰、分步骤的方式讲解，避免直接给出复杂推理。";
+  "你是 K12 辅导老师。请用简洁、清晰、分步骤的方式讲解，避免直接给出复杂推理。";
 
 const GENERATE_PROMPT =
-  "你是小学人教版出题老师。只输出严格 JSON，不要附加解释或代码块。";
+  "你是 K12 出题老师。只输出严格 JSON，不要附加解释或代码块。";
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string | any[] };
 
@@ -446,20 +453,52 @@ function buildHomeworkFallback(payload: {
   grade: string;
   focus?: string;
   uploadCount: number;
+  submissionType?: "quiz" | "upload" | "essay";
+  submissionText?: string | null;
 }) {
   const base = payload.focus?.trim() || "作业完成情况与解题思路";
-  const summary = `已收到 ${payload.uploadCount} 份作业材料。请重点关注：${base}。`;
+  const isEssay = payload.submissionType === "essay";
+  const hasText = Boolean(payload.submissionText?.trim());
+  const summaryParts = [];
+  if (payload.uploadCount > 0) {
+    summaryParts.push(`已收到 ${payload.uploadCount} 份作业材料。`);
+  }
+  if (hasText) {
+    summaryParts.push(isEssay ? "已收到作文文本内容。" : "已收到学生备注。");
+  }
+  if (!summaryParts.length) {
+    summaryParts.push("已收到作业信息。");
+  }
+  summaryParts.push(`请重点关注：${base}。`);
+  const summary = summaryParts.join("");
+  const rubric = isEssay
+    ? [
+        { item: "结构与立意", score: 80, comment: "结构完整，可加强开头点题。" },
+        { item: "语言表达", score: 78, comment: "语句通顺，注意用词准确。" },
+        { item: "细节与例证", score: 82, comment: "例子较清晰，可补充细节。" },
+        { item: "书写规范", score: 85, comment: "书写较清楚，注意标点规范。" }
+      ]
+    : [
+        { item: "解题步骤", score: 80, comment: "步骤基本完整，可再细化关键环节。" },
+        { item: "结果准确性", score: 78, comment: "个别题需复核结果。" },
+        { item: "书写规范", score: 85, comment: "整体书写清晰。" }
+      ];
   return {
     score: 80,
     summary,
     strengths: ["步骤较完整", "书写较清晰"],
     issues: ["个别步骤缺少解释", "部分题目缺少验算"],
     suggestions: ["补充关键步骤说明", "完成后进行自检或验算"],
-    rubric: [
-      { item: "解题步骤", score: 80, comment: "步骤基本完整，可再细化关键环节。" },
-      { item: "结果准确性", score: 78, comment: "个别题需复核结果。" },
-      { item: "书写规范", score: 85, comment: "整体书写清晰。" }
-    ],
+    rubric,
+    writing: isEssay
+      ? {
+          scores: { structure: 80, grammar: 78, vocab: 79 },
+          summary: "表达清晰，建议在结构衔接与词汇丰富度上继续提升。",
+          strengths: ["主题明确", "语句通顺"],
+          improvements: ["丰富细节描写", "注意段落衔接"],
+          corrected: undefined
+        }
+      : undefined,
     provider: "rule"
   };
 }
@@ -470,7 +509,8 @@ export async function generateHomeworkReview(payload: {
   assignmentTitle: string;
   assignmentDescription?: string;
   focus?: string;
-  studentNote?: string;
+  submissionType?: "quiz" | "upload" | "essay";
+  submissionText?: string | null;
   images: Array<{ mimeType: string; base64: string; fileName: string }>;
 }) {
   const provider = process.env.LLM_PROVIDER ?? "mock";
@@ -479,23 +519,32 @@ export async function generateHomeworkReview(payload: {
       subject: payload.subject,
       grade: payload.grade,
       focus: payload.focus,
-      uploadCount: payload.images.length
+      uploadCount: payload.images.length,
+      submissionType: payload.submissionType,
+      submissionText: payload.submissionText
     });
   }
 
+  const isEssay = payload.submissionType === "essay";
   const context = [
     `学科：${payload.subject}`,
     `年级：${payload.grade}`,
     `作业标题：${payload.assignmentTitle}`,
     payload.assignmentDescription ? `作业说明：${payload.assignmentDescription}` : "",
     payload.focus ? `批改重点：${payload.focus}` : "",
-    payload.studentNote ? `学生备注：${payload.studentNote}` : ""
+    payload.submissionText
+      ? `${isEssay ? "作文内容" : "学生备注"}：${payload.submissionText}`
+      : ""
   ]
     .filter(Boolean)
     .join("\n");
 
-  const userText = `${context}\n请对作业进行批改，输出 JSON：{\"score\":80,\"summary\":\"...\",\"strengths\":[\"...\"],\"issues\":[\"...\"],\"suggestions\":[\"...\"],\"rubric\":[{\"item\":\"...\",\"score\":80,\"comment\":\"...\"}]}` +
-    "。不要输出多余文本。";
+  const essaySchema =
+    "{\"score\":80,\"summary\":\"...\",\"strengths\":[\"...\"],\"issues\":[\"...\"],\"suggestions\":[\"...\"],\"rubric\":[{\"item\":\"...\",\"score\":80,\"comment\":\"...\"}],\"writing\":{\"scores\":{\"structure\":80,\"grammar\":78,\"vocab\":75},\"summary\":\"...\",\"strengths\":[\"...\"],\"improvements\":[\"...\"],\"corrected\":\"...\"}}";
+  const homeworkSchema =
+    "{\"score\":80,\"summary\":\"...\",\"strengths\":[\"...\"],\"issues\":[\"...\"],\"suggestions\":[\"...\"],\"rubric\":[{\"item\":\"...\",\"score\":80,\"comment\":\"...\"}]}";
+
+  const userText = `${context}\n请对作业进行批改，输出 JSON：${isEssay ? essaySchema : homeworkSchema}。不要输出多余文本。`;
 
   const visionModel = process.env.LLM_VISION_MODEL ?? process.env.LLM_MODEL ?? "glm-4.7";
   const content: any[] = [{ type: "text", text: userText }];
@@ -524,7 +573,9 @@ export async function generateHomeworkReview(payload: {
       subject: payload.subject,
       grade: payload.grade,
       focus: payload.focus,
-      uploadCount: payload.images.length
+      uploadCount: payload.images.length,
+      submissionType: payload.submissionType,
+      submissionText: payload.submissionText
     });
   }
 
@@ -534,7 +585,9 @@ export async function generateHomeworkReview(payload: {
       subject: payload.subject,
       grade: payload.grade,
       focus: payload.focus,
-      uploadCount: payload.images.length
+      uploadCount: payload.images.length,
+      submissionType: payload.submissionType,
+      submissionText: payload.submissionText
     });
   }
 
@@ -558,6 +611,26 @@ export async function generateHomeworkReview(payload: {
     }))
     .filter((item: any) => item.item);
 
+  const writing = (parsed as any).writing ?? null;
+  const writingScores = writing?.scores ?? {};
+  const writingBlock = writing
+    ? {
+        scores: {
+          structure: Math.max(0, Math.min(100, Math.round(Number(writingScores.structure ?? 0)))),
+          grammar: Math.max(0, Math.min(100, Math.round(Number(writingScores.grammar ?? 0)))),
+          vocab: Math.max(0, Math.min(100, Math.round(Number(writingScores.vocab ?? 0))))
+        },
+        summary: String(writing.summary ?? "").trim() || "写作结构清晰，可继续优化用词与细节。",
+        strengths: Array.isArray(writing.strengths)
+          ? writing.strengths.map((item: any) => String(item).trim()).filter(Boolean).slice(0, 5)
+          : [],
+        improvements: Array.isArray(writing.improvements)
+          ? writing.improvements.map((item: any) => String(item).trim()).filter(Boolean).slice(0, 5)
+          : [],
+        corrected: String(writing.corrected ?? "").trim() || undefined
+      }
+    : undefined;
+
   return {
     score: score || 80,
     summary: summary || "已完成批改。",
@@ -565,6 +638,7 @@ export async function generateHomeworkReview(payload: {
     issues: issues.slice(0, 5),
     suggestions: suggestions.slice(0, 5),
     rubric: rubric.slice(0, 5),
+    writing: writingBlock,
     provider
   };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Card from "@/components/Card";
 import EduIcon from "@/components/EduIcon";
 
@@ -24,15 +24,30 @@ export default function FocusPage() {
   const [summary, setSummary] = useState<FocusSummary | null>(null);
   const startedAtRef = useRef<string | null>(null);
 
-  async function loadSummary() {
+  const loadSummary = useCallback(async () => {
     const res = await fetch("/api/focus/summary");
     const data = await res.json();
     setSummary(data?.data ?? null);
-  }
+  }, []);
 
   useEffect(() => {
     loadSummary();
-  }, []);
+  }, [loadSummary]);
+
+  const completeSession = useCallback(async () => {
+    await fetch("/api/focus/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode,
+        durationMinutes: duration,
+        startedAt: startedAtRef.current,
+        endedAt: new Date().toISOString()
+      })
+    });
+    startedAtRef.current = null;
+    loadSummary();
+  }, [duration, loadSummary, mode]);
 
   useEffect(() => {
     if (!running) return;
@@ -48,7 +63,7 @@ export default function FocusPage() {
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [running]);
+  }, [completeSession, running]);
 
   function startTimer() {
     setSecondsLeft(duration * 60);
@@ -60,21 +75,6 @@ export default function FocusPage() {
     setRunning(false);
     setSecondsLeft(0);
     startedAtRef.current = null;
-  }
-
-  async function completeSession() {
-    await fetch("/api/focus/session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mode,
-        durationMinutes: duration,
-        startedAt: startedAtRef.current,
-        endedAt: new Date().toISOString()
-      })
-    });
-    startedAtRef.current = null;
-    loadSummary();
   }
 
   const presets = mode === "focus" ? [15, 25, 40] : [5, 10, 15];

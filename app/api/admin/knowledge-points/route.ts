@@ -3,9 +3,10 @@ import { createKnowledgePoint, getKnowledgePoints } from "@/lib/content";
 import { requireRole } from "@/lib/guard";
 import { addAdminLog } from "@/lib/admin-log";
 import type { Subject } from "@/lib/types";
+import { SUBJECT_OPTIONS } from "@/lib/constants";
 export const dynamic = "force-dynamic";
 
-const ALLOWED_SUBJECTS: Subject[] = ["math", "chinese", "english"];
+const ALLOWED_SUBJECTS: Subject[] = SUBJECT_OPTIONS.map((item) => item.value as Subject);
 
 export async function GET() {
   const user = await requireRole("admin");

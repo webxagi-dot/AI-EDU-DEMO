@@ -49,13 +49,19 @@ export async function POST(request: Request, context: { params: { id: string } }
   }>;
 
   const isUpload = assignment.submissionType === "upload";
-  if (isUpload) {
-    const uploads = await getAssignmentUploads(assignment.id, user.id);
-    if (!uploads.length) {
-      return NextResponse.json({ error: "请先上传作业文件" }, { status: 400 });
-    }
+  const isEssay = assignment.submissionType === "essay";
+  const uploads = isUpload || isEssay ? await getAssignmentUploads(assignment.id, user.id) : [];
+  const hasUploads = uploads.length > 0;
+  const hasText = Boolean(body.submissionText?.trim());
+
+  if (isUpload && !hasUploads) {
+    return NextResponse.json({ error: "请先上传作业文件" }, { status: 400 });
   }
-  if (!isUpload) {
+  if (isEssay && !hasUploads && !hasText) {
+    return NextResponse.json({ error: "请填写作文内容或上传作业图片" }, { status: 400 });
+  }
+
+  if (!isUpload && !isEssay) {
     for (const item of items) {
       const question = questionMap.get(item.questionId);
       if (!question) {
@@ -86,11 +92,11 @@ export async function POST(request: Request, context: { params: { id: string } }
     }
   }
 
-  const total = isUpload ? 0 : items.length;
+  const total = isUpload || isEssay ? null : items.length;
   await completeAssignmentProgress({
     assignmentId: assignment.id,
     studentId: user.id,
-    score,
+    score: isUpload || isEssay ? null : score,
     total
   });
 
@@ -98,10 +104,15 @@ export async function POST(request: Request, context: { params: { id: string } }
     assignmentId: assignment.id,
     studentId: user.id,
     answers: isUpload ? {} : answers,
-    score,
-    total,
+    score: isUpload || isEssay ? 0 : score,
+    total: isUpload || isEssay ? 0 : items.length,
     submissionText: body.submissionText
   });
 
-  return NextResponse.json({ score, total, details, submissionText: body.submissionText });
+  return NextResponse.json({
+    score: isUpload || isEssay ? 0 : score,
+    total: isUpload || isEssay ? 0 : items.length,
+    details,
+    submissionText: body.submissionText
+  });
 }

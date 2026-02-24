@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/Card";
 import EduIcon from "@/components/EduIcon";
+import { GRADE_OPTIONS, SUBJECT_LABELS, SUBJECT_OPTIONS } from "@/lib/constants";
 import { toPng } from "html-to-image";
 
 type Question = {
@@ -106,9 +107,11 @@ export default function DiagnosticPage() {
               onChange={(event) => setSubject(event.target.value)}
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
             >
-              <option value="math">数学</option>
-              <option value="chinese">语文</option>
-              <option value="english">英语</option>
+              {SUBJECT_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
             </select>
           </label>
           <label>
@@ -118,12 +121,11 @@ export default function DiagnosticPage() {
               onChange={(event) => setGrade(event.target.value)}
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
             >
-              <option value="1">一年级</option>
-              <option value="2">二年级</option>
-              <option value="3">三年级</option>
-              <option value="4">四年级</option>
-              <option value="5">五年级</option>
-              <option value="6">六年级</option>
+              {GRADE_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
             </select>
           </label>
         </div>
@@ -136,7 +138,7 @@ export default function DiagnosticPage() {
         <Card title={`第 ${index + 1} 题`} tag="答题">
           <div className="pill-list" style={{ marginBottom: 10 }}>
             <span className="pill">进度 {index + 1}/{questions.length}</span>
-            <span className="pill">学科 {subject === "math" ? "数学" : subject === "chinese" ? "语文" : "英语"}</span>
+            <span className="pill">学科 {SUBJECT_LABELS[subject] ?? subject}</span>
             <span className="pill">年级 {grade}</span>
           </div>
           <p>{current.stem}</p>

@@ -4,9 +4,10 @@ import { createQuestion, getKnowledgePoints, getQuestions } from "@/lib/content"
 import { generateQuestionDraft } from "@/lib/ai";
 import type { Subject, Difficulty } from "@/lib/types";
 import { addAdminLog } from "@/lib/admin-log";
+import { SUBJECT_OPTIONS } from "@/lib/constants";
 export const dynamic = "force-dynamic";
 
-const ALLOWED_SUBJECTS: Subject[] = ["math", "chinese", "english"];
+const ALLOWED_SUBJECTS: Subject[] = SUBJECT_OPTIONS.map((item) => item.value as Subject);
 const ALLOWED_DIFFICULTY: Difficulty[] = ["easy", "medium", "hard"];
 
 function normalizeStem(text: string) {

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Card from "@/components/Card";
+import { GRADE_OPTIONS, SUBJECT_LABELS, SUBJECT_OPTIONS } from "@/lib/constants";
 
 type KnowledgePoint = {
   id: string;
@@ -428,18 +429,26 @@ export default function QuestionsAdminPage() {
               onChange={(event) => setAiForm({ ...aiForm, subject: event.target.value })}
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
             >
-              <option value="math">数学</option>
-              <option value="chinese">语文</option>
-              <option value="english">英语</option>
+              {SUBJECT_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
             </select>
           </label>
           <label>
             <div className="section-title">年级</div>
-            <input
+            <select
               value={aiForm.grade}
               onChange={(event) => setAiForm({ ...aiForm, grade: event.target.value })}
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
-            />
+            >
+              {GRADE_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
           </label>
           {aiForm.mode === "single" ? (
             <label>
@@ -520,18 +529,26 @@ export default function QuestionsAdminPage() {
               onChange={(event) => setForm({ ...form, subject: event.target.value })}
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
             >
-              <option value="math">数学</option>
-              <option value="chinese">语文</option>
-              <option value="english">英语</option>
+              {SUBJECT_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
             </select>
           </label>
           <label>
             <div className="section-title">年级</div>
-            <input
+            <select
               value={form.grade}
               onChange={(event) => setForm({ ...form, grade: event.target.value })}
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
-            />
+            >
+              {GRADE_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             <div className="section-title">知识点</div>
@@ -637,7 +654,7 @@ export default function QuestionsAdminPage() {
             <div className="card" key={item.id}>
               <div className="section-title">{item.stem}</div>
               <div style={{ fontSize: 12, color: "var(--ink-1)" }}>
-                {item.subject} · {item.grade} 年级 · 难度{" "}
+                {SUBJECT_LABELS[item.subject] ?? item.subject} · {item.grade} 年级 · 难度{" "}
                 {difficultyLabel[item.difficulty ?? "medium"] ?? item.difficulty ?? "中"} · 题型{" "}
                 {questionTypeLabel[item.questionType ?? "choice"] ?? item.questionType ?? "选择题"} · 选项{" "}
                 {item.options.length} 个

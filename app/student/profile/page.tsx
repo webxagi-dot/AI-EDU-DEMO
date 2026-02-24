@@ -3,12 +3,7 @@
 import { useEffect, useState } from "react";
 import Card from "@/components/Card";
 import EduIcon from "@/components/EduIcon";
-
-const subjectOptions = [
-  { key: "math", label: "数学" },
-  { key: "chinese", label: "语文" },
-  { key: "english", label: "英语" }
-];
+import { GRADE_OPTIONS, SUBJECT_OPTIONS } from "@/lib/constants";
 
 export default function StudentProfilePage() {
   const [grade, setGrade] = useState("4");
@@ -76,23 +71,22 @@ export default function StudentProfilePage() {
               onChange={(event) => setGrade(event.target.value)}
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
             >
-              <option value="1">一年级</option>
-              <option value="2">二年级</option>
-              <option value="3">三年级</option>
-              <option value="4">四年级</option>
-              <option value="5">五年级</option>
-              <option value="6">六年级</option>
+              {GRADE_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
             </select>
           </label>
           <div>
             <div className="section-title">学习学科</div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              {subjectOptions.map((subject) => (
-                <label key={subject.key} className="card" style={{ cursor: "pointer" }}>
+              {SUBJECT_OPTIONS.map((subject) => (
+                <label key={subject.value} className="card" style={{ cursor: "pointer" }}>
                   <input
                     type="checkbox"
-                    checked={subjects.includes(subject.key)}
-                    onChange={() => toggleSubject(subject.key)}
+                    checked={subjects.includes(subject.value)}
+                    onChange={() => toggleSubject(subject.value)}
                     style={{ marginRight: 8 }}
                   />
                   {subject.label}

@@ -5,7 +5,7 @@ import UserMenu from "@/components/UserMenu";
 
 export const metadata = {
   title: "航科AI教育",
-  description: "小学课后辅导 MVP"
+  description: "K12 AI 教育 MVP"
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -25,7 +25,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/practice">练习</Link>
               <Link href="/focus">专注计时</Link>
               <Link href="/reading">朗读评分</Link>
-              <Link href="/writing">写作批改</Link>
+              <Link href="/student/assignments">作业中心</Link>
               <Link href="/challenge">挑战任务</Link>
               <Link href="/parent">家长端</Link>
               <Link href="/admin">管理端</Link>
@@ -33,7 +33,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <UserMenu user={user} />
           </header>
           <main className="main">{children}</main>
-          <footer className="site-footer">© 2026 航科AI教育 课程辅导 MVP</footer>
+          <footer className="site-footer">© 2026 航科AI教育 K12 学习辅导 MVP</footer>
         </div>
       </body>
     </html>

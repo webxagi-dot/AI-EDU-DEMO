@@ -3,7 +3,6 @@ import { readJson, writeJson } from "./storage";
 import { isDbEnabled, query, queryOne } from "./db";
 import { getAttemptsByUser, getStreak, getWeeklyStats } from "./progress";
 import { getAssignmentSubmissionsByStudent } from "./assignments";
-import { getWritingSubmissionsByUser } from "./writing";
 
 export type ChallengeTask = {
   id: string;
@@ -46,14 +45,6 @@ const TASKS: ChallengeTask[] = [
     goal: 80,
     points: 20,
     type: "accuracy"
-  },
-  {
-    id: "writing-1",
-    title: "写作挑战",
-    description: "完成 1 次写作批改",
-    goal: 1,
-    points: 12,
-    type: "count"
   },
   {
     id: "assignment-1",
@@ -104,7 +95,6 @@ export async function getChallengeStatus(userId: string) {
   const attempts = await getAttemptsByUser(userId);
   const streak = await getStreak(userId);
   const weekly = await getWeeklyStats(userId);
-  const writing = await getWritingSubmissionsByUser(userId);
   const assignments = await getAssignmentSubmissionsByStudent(userId);
   const claims = await getClaims(userId);
   const claimedSet = new Set(claims.map((item) => item.taskId));
@@ -117,8 +107,6 @@ export async function getChallengeStatus(userId: string) {
       progress = streak;
     } else if (task.id === "accuracy-80") {
       progress = weekly.accuracy;
-    } else if (task.id === "writing-1") {
-      progress = writing.length;
     } else if (task.id === "assignment-1") {
       progress = assignments.length;
     }

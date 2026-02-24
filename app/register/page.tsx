@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Card from "@/components/Card";
+import { GRADE_OPTIONS } from "@/lib/constants";
 
 export default function RegisterPage() {
   const [role, setRole] = useState<"student" | "parent">("student");
@@ -98,12 +99,11 @@ export default function RegisterPage() {
                 onChange={(event) => setGrade(event.target.value)}
                 style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
               >
-                <option value="1">一年级</option>
-                <option value="2">二年级</option>
-                <option value="3">三年级</option>
-                <option value="4">四年级</option>
-                <option value="5">五年级</option>
-                <option value="6">六年级</option>
+                {GRADE_OPTIONS.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
               </select>
             </label>
           ) : (
@@ -129,7 +129,7 @@ export default function RegisterPage() {
           已有账号？<Link href="/login">去登录</Link>
         </div>
         <div className="pill-list" style={{ marginTop: 10 }}>
-          <span className="pill">支持人教版小学</span>
+          <span className="pill">支持 K12 学段</span>
           <span className="pill">多学科同步</span>
           <span className="pill">家校协同</span>
         </div>

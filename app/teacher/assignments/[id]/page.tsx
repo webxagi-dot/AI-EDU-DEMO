@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/Card";
 import EduIcon from "@/components/EduIcon";
+import { ASSIGNMENT_TYPE_LABELS, SUBJECT_LABELS } from "@/lib/constants";
 
 type AssignmentDetail = {
   assignment: {
@@ -12,7 +13,7 @@ type AssignmentDetail = {
     description?: string;
     dueDate: string;
     createdAt: string;
-    submissionType?: "quiz" | "upload";
+    submissionType?: "quiz" | "upload" | "essay";
     gradingFocus?: string;
   };
   class: {
@@ -33,17 +34,11 @@ type AssignmentDetail = {
   }>;
 };
 
-const subjectLabel: Record<string, string> = {
-  math: "数学",
-  chinese: "语文",
-  english: "英语"
-};
-
 export default function TeacherAssignmentDetailPage({ params }: { params: { id: string } }) {
   const [data, setData] = useState<AssignmentDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     setError(null);
     const res = await fetch(`/api/teacher/assignments/${params.id}`);
     const payload = await res.json();
@@ -52,11 +47,11 @@ export default function TeacherAssignmentDetailPage({ params }: { params: { id: 
       return;
     }
     setData(payload);
-  }
+  }, [params.id]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   if (error) {
     return (
@@ -81,7 +76,7 @@ export default function TeacherAssignmentDetailPage({ params }: { params: { id: 
         <div>
           <h2>作业详情</h2>
           <div className="section-sub">
-            {data.class.name} · {subjectLabel[data.class.subject] ?? data.class.subject} · {data.class.grade} 年级
+            {data.class.name} · {SUBJECT_LABELS[data.class.subject] ?? data.class.subject} · {data.class.grade} 年级
           </div>
         </div>
         <span className="chip">已完成 {completedCount}/{data.students.length}</span>
@@ -106,7 +101,9 @@ export default function TeacherAssignmentDetailPage({ params }: { params: { id: 
             <div className="pill-list">
               <span className="pill">已完成 {completedCount}</span>
               <span className="pill">待完成 {data.students.length - completedCount}</span>
-              <span className="pill">{data.assignment.submissionType === "upload" ? "上传作业" : "在线作答"}</span>
+              <span className="pill">
+                {ASSIGNMENT_TYPE_LABELS[data.assignment.submissionType ?? "quiz"]}
+              </span>
             </div>
           </div>
         </div>
@@ -129,9 +126,13 @@ export default function TeacherAssignmentDetailPage({ params }: { params: { id: 
                 <div className="section-sub">{student.email}</div>
                 {student.status === "completed" ? (
                   <div className="pill-list" style={{ marginTop: 10 }}>
-                    <span className="pill">
-                      得分 {student.score ?? 0}/{student.total ?? 0}
-                    </span>
+                    {data.assignment.submissionType === "quiz" ? (
+                      <span className="pill">
+                        得分 {student.score ?? 0}/{student.total ?? 0}
+                      </span>
+                    ) : (
+                      <span className="pill">已提交待评分</span>
+                    )}
                     <span className="pill">
                       完成时间 {student.completedAt ? new Date(student.completedAt).toLocaleDateString("zh-CN") : "-"}
                     </span>

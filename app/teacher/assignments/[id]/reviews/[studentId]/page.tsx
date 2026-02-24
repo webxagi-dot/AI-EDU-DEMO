@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import Card from "@/components/Card";
 import EduIcon from "@/components/EduIcon";
+import { ASSIGNMENT_TYPE_LABELS, SUBJECT_LABELS } from "@/lib/constants";
 
 type ReviewPayload = {
-  assignment: { id: string; title: string; dueDate: string; submissionType?: "quiz" | "upload" };
+  assignment: { id: string; title: string; dueDate: string; submissionType?: "quiz" | "upload" | "essay" };
   class: { id: string; name: string; subject: string; grade: string };
   student: { id: string; name: string; email: string };
   submission?: { answers: Record<string, string>; score: number; total: number; submissionText?: string } | null;
@@ -48,7 +50,7 @@ export default function TeacherAssignmentReviewPage({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiReview, setAiReview] = useState<any>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     setError(null);
     const res = await fetch(`/api/teacher/assignments/${params.id}/reviews/${params.studentId}`);
     const payload = await res.json();
@@ -64,17 +66,21 @@ export default function TeacherAssignmentReviewPage({
     });
     setItemState(nextState);
     setAiReview(payload.aiReview?.result ?? null);
-  }
+  }, [params.id, params.studentId]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   const wrongQuestions = useMemo(
     () => (data?.questions ?? []).filter((item) => !item.correct),
     [data]
   );
-  const canAiReview = (data?.uploads?.length ?? 0) > 0;
+  const canAiReview =
+    (data?.uploads?.length ?? 0) > 0 || Boolean(data?.submission?.submissionText?.trim());
+  const isEssay = data?.assignment?.submissionType === "essay";
+  const isUpload = data?.assignment?.submissionType === "upload";
+  const isQuiz = !isEssay && !isUpload;
 
   async function handleAiReview() {
     if (!data) return;
@@ -143,7 +149,7 @@ export default function TeacherAssignmentReviewPage({
         <div>
           <h2>作业批改</h2>
           <div className="section-sub">
-            {data.class.name} · {data.class.subject} · {data.class.grade} 年级
+            {data.class.name} · {SUBJECT_LABELS[data.class.subject] ?? data.class.subject} · {data.class.grade} 年级
           </div>
         </div>
         <span className="chip">学生：{data.student.name}</span>
@@ -159,15 +165,14 @@ export default function TeacherAssignmentReviewPage({
           <div className="card feature-card">
             <EduIcon name="chart" />
             <div className="section-title">作业成绩</div>
-            <p>
-              得分：{data.submission?.score ?? 0}/{data.submission?.total ?? 0}
-            </p>
+            <p>{isQuiz ? `得分：${data.submission?.score ?? 0}/${data.submission?.total ?? 0}` : "待评分"}</p>
             <div className="pill-list">
               <span className="pill">错题 {wrongQuestions.length} 题</span>
+              <span className="pill">{ASSIGNMENT_TYPE_LABELS[data.assignment.submissionType ?? "quiz"]}</span>
             </div>
             {data.submission?.submissionText ? (
               <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-1)" }}>
-                学生备注：{data.submission.submissionText}
+                {isEssay ? "作文内容" : "学生备注"}：{data.submission.submissionText}
               </div>
             ) : null}
           </div>
@@ -187,10 +192,14 @@ export default function TeacherAssignmentReviewPage({
                   {Math.round(item.size / 1024)} KB · {new Date(item.createdAt).toLocaleString("zh-CN")}
                 </div>
                 {item.mimeType.startsWith("image/") ? (
-                  <img
+                  <Image
                     src={`data:${item.mimeType};base64,${item.contentBase64}`}
                     alt={item.fileName}
-                    style={{ width: "100%", maxWidth: 420, marginTop: 8, borderRadius: 12 }}
+                    width={640}
+                    height={420}
+                    sizes="(max-width: 768px) 100vw, 420px"
+                    style={{ width: "100%", height: "auto", maxWidth: 420, marginTop: 8, borderRadius: 12 }}
+                    unoptimized
                   />
                 ) : (
                   <a
@@ -207,13 +216,21 @@ export default function TeacherAssignmentReviewPage({
         </Card>
       ) : null}
 
+      {data.submission?.submissionText ? (
+        <Card title={isEssay ? "作文内容" : "学生作答说明"} tag="文本">
+          <div className="card">
+            <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{data.submission.submissionText}</div>
+          </div>
+        </Card>
+      ) : null}
+
       <Card title="AI 批改" tag="AI">
         <div className="cta-row">
           <button className="button primary" type="button" onClick={handleAiReview} disabled={aiLoading || !canAiReview}>
             {aiLoading ? "批改中..." : "生成 AI 批改"}
           </button>
         </div>
-        {!canAiReview ? <p style={{ marginTop: 8, color: "var(--ink-1)" }}>学生未上传作业附件。</p> : null}
+        {!canAiReview ? <p style={{ marginTop: 8, color: "var(--ink-1)" }}>学生尚未提交作业内容。</p> : null}
         {aiReview ? (
           <div className="grid" style={{ gap: 10, marginTop: 12 }}>
             <div className="card">
@@ -263,6 +280,43 @@ export default function TeacherAssignmentReviewPage({
                 </div>
               </div>
             ) : null}
+            {aiReview.writing ? (
+              <div className="card">
+                <div className="section-title">写作评分</div>
+                <div className="pill-list" style={{ marginTop: 8 }}>
+                  <span className="pill">结构 {aiReview.writing.scores?.structure ?? 0}</span>
+                  <span className="pill">语法 {aiReview.writing.scores?.grammar ?? 0}</span>
+                  <span className="pill">词汇 {aiReview.writing.scores?.vocab ?? 0}</span>
+                </div>
+                <p style={{ marginTop: 8 }}>{aiReview.writing.summary ?? "暂无写作总结。"}</p>
+                {aiReview.writing.strengths?.length ? (
+                  <div style={{ marginTop: 8 }}>
+                    <div className="section-title">写作优点</div>
+                    <ul style={{ margin: "6px 0 0 16px" }}>
+                      {aiReview.writing.strengths.map((item: string) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+                {aiReview.writing.improvements?.length ? (
+                  <div style={{ marginTop: 8 }}>
+                    <div className="section-title">改进建议</div>
+                    <ul style={{ margin: "6px 0 0 16px" }}>
+                      {aiReview.writing.improvements.map((item: string) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+                {aiReview.writing.corrected ? (
+                  <div style={{ marginTop: 8 }}>
+                    <div className="section-title">修改示例</div>
+                    <div style={{ whiteSpace: "pre-wrap" }}>{aiReview.writing.corrected}</div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         ) : (
           <p style={{ marginTop: 8, color: "var(--ink-1)" }}>暂无 AI 批改结果。</p>
@@ -270,74 +324,75 @@ export default function TeacherAssignmentReviewPage({
       </Card>
 
       <Card title="错题复盘" tag="批改">
-        {data.assignment.submissionType === "upload" ? (
-          <p>该作业为上传作业，请结合附件与 AI 批改结果进行点评。</p>
-        ) : wrongQuestions.length === 0 ? (
-          <p>该学生全部答对，无需批改。</p>
-        ) : (
-          <form onSubmit={handleSubmit} style={{ display: "grid", gap: 16 }}>
-            {wrongQuestions.map((question, index) => (
-              <div className="card" key={question.id}>
-                <div className="section-title">
-                  {index + 1}. {question.stem}
+        <form onSubmit={handleSubmit} style={{ display: "grid", gap: 16 }}>
+          {!isQuiz ? (
+            <p>该作业为{isEssay ? "作文/主观题" : "上传作业"}，请结合附件与 AI 批改结果进行点评。</p>
+          ) : wrongQuestions.length === 0 ? (
+            <p>该学生全部答对，可补充总体点评。</p>
+          ) : null}
+          {isQuiz
+            ? wrongQuestions.map((question, index) => (
+                <div className="card" key={question.id}>
+                  <div className="section-title">
+                    {index + 1}. {question.stem}
+                  </div>
+                  <div className="pill-list" style={{ marginTop: 8 }}>
+                    <span className="pill">学生答案：{question.answer || "未作答"}</span>
+                    <span className="pill">正确答案：{question.correctAnswer}</span>
+                  </div>
+                  <p style={{ marginTop: 8 }}>解析：{question.explanation}</p>
+                  <label>
+                    <div className="section-title">错因标签</div>
+                    <select
+                      value={itemState[question.id]?.wrongTag ?? ""}
+                      onChange={(event) =>
+                        setItemState((prev) => ({
+                          ...prev,
+                          [question.id]: { wrongTag: event.target.value, comment: prev[question.id]?.comment ?? "" }
+                        }))
+                      }
+                      style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+                    >
+                      <option value="">请选择</option>
+                      {tags.map((tag) => (
+                        <option key={tag} value={tag}>
+                          {tag}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <div className="section-title">点评</div>
+                    <textarea
+                      value={itemState[question.id]?.comment ?? ""}
+                      onChange={(event) =>
+                        setItemState((prev) => ({
+                          ...prev,
+                          [question.id]: { wrongTag: prev[question.id]?.wrongTag ?? "", comment: event.target.value }
+                        }))
+                      }
+                      rows={3}
+                      style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+                    />
+                  </label>
                 </div>
-                <div className="pill-list" style={{ marginTop: 8 }}>
-                  <span className="pill">学生答案：{question.answer || "未作答"}</span>
-                  <span className="pill">正确答案：{question.correctAnswer}</span>
-                </div>
-                <p style={{ marginTop: 8 }}>解析：{question.explanation}</p>
-                <label>
-                  <div className="section-title">错因标签</div>
-                  <select
-                    value={itemState[question.id]?.wrongTag ?? ""}
-                    onChange={(event) =>
-                      setItemState((prev) => ({
-                        ...prev,
-                        [question.id]: { wrongTag: event.target.value, comment: prev[question.id]?.comment ?? "" }
-                      }))
-                    }
-                    style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
-                  >
-                    <option value="">请选择</option>
-                    {tags.map((tag) => (
-                      <option key={tag} value={tag}>
-                        {tag}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  <div className="section-title">点评</div>
-                  <textarea
-                    value={itemState[question.id]?.comment ?? ""}
-                    onChange={(event) =>
-                      setItemState((prev) => ({
-                        ...prev,
-                        [question.id]: { wrongTag: prev[question.id]?.wrongTag ?? "", comment: event.target.value }
-                      }))
-                    }
-                    rows={3}
-                    style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
-                  />
-                </label>
-              </div>
-            ))}
-            <label>
-              <div className="section-title">总体点评</div>
-              <textarea
-                value={overallComment}
-                onChange={(event) => setOverallComment(event.target.value)}
-                rows={3}
-                style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
-              />
-            </label>
-            {message ? <div style={{ color: "#1a7f37", fontSize: 13 }}>{message}</div> : null}
-            {error ? <div style={{ color: "#b42318", fontSize: 13 }}>{error}</div> : null}
-            <button className="button primary" type="submit" disabled={saving}>
-              {saving ? "保存中..." : "保存批改"}
-            </button>
-          </form>
-        )}
+              ))
+            : null}
+          <label>
+            <div className="section-title">总体点评</div>
+            <textarea
+              value={overallComment}
+              onChange={(event) => setOverallComment(event.target.value)}
+              rows={3}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            />
+          </label>
+          {message ? <div style={{ color: "#1a7f37", fontSize: 13 }}>{message}</div> : null}
+          {error ? <div style={{ color: "#b42318", fontSize: 13 }}>{error}</div> : null}
+          <button className="button primary" type="submit" disabled={saving}>
+            {saving ? "保存中..." : "保存批改"}
+          </button>
+        </form>
       </Card>
     </div>
   );

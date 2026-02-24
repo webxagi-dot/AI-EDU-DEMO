@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/Card";
 import EduIcon from "@/components/EduIcon";
+import { ASSIGNMENT_TYPE_LABELS, GRADE_OPTIONS, SUBJECT_LABELS, SUBJECT_OPTIONS } from "@/lib/constants";
 
 type ClassItem = {
   id: string;
@@ -26,6 +27,7 @@ type AssignmentItem = {
   dueDate: string;
   total: number;
   completed: number;
+  submissionType?: "quiz" | "upload" | "essay";
 };
 
 type KnowledgePoint = {
@@ -35,12 +37,6 @@ type KnowledgePoint = {
   title: string;
   chapter: string;
   unit?: string;
-};
-
-const subjectLabel: Record<string, string> = {
-  math: "数学",
-  chinese: "语文",
-  english: "英语"
 };
 
 export default function TeacherPage() {
@@ -292,7 +288,7 @@ export default function TeacherPage() {
                     正确率 {item.ratio}% · 练习 {item.total} 次
                   </p>
                   <p>
-                    {subjectLabel[item.subject] ?? item.subject} · {item.grade} 年级
+                    {SUBJECT_LABELS[item.subject] ?? item.subject} · {item.grade} 年级
                   </p>
                 </div>
               ))}
@@ -343,9 +339,11 @@ export default function TeacherPage() {
                 onChange={(event) => setClassForm((prev) => ({ ...prev, subject: event.target.value }))}
                 style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
               >
-                <option value="math">数学</option>
-                <option value="chinese">语文</option>
-                <option value="english">英语</option>
+                {SUBJECT_OPTIONS.map((subject) => (
+                  <option key={subject.value} value={subject.value}>
+                    {subject.label}
+                  </option>
+                ))}
               </select>
             </label>
             <label>
@@ -355,9 +353,9 @@ export default function TeacherPage() {
                 onChange={(event) => setClassForm((prev) => ({ ...prev, grade: event.target.value }))}
                 style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
               >
-                {["1", "2", "3", "4", "5", "6"].map((grade) => (
-                  <option key={grade} value={grade}>
-                    {grade} 年级
+                {GRADE_OPTIONS.map((grade) => (
+                  <option key={grade.value} value={grade.value}>
+                    {grade.label}
                   </option>
                 ))}
               </select>
@@ -411,7 +409,7 @@ export default function TeacherPage() {
             >
               {classes.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {item.name} · {subjectLabel[item.subject] ?? item.subject} · {item.grade} 年级
+                  {item.name} · {SUBJECT_LABELS[item.subject] ?? item.subject} · {item.grade} 年级
                 </option>
               ))}
             </select>
@@ -456,6 +454,7 @@ export default function TeacherPage() {
               >
                 <option value="quiz">在线题目</option>
                 <option value="upload">上传作业</option>
+                <option value="essay">作文/主观题</option>
               </select>
             </label>
           </div>
@@ -487,6 +486,11 @@ export default function TeacherPage() {
                 }
                 style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
               />
+              <div style={{ marginTop: 6, fontSize: 12, color: "var(--ink-1)" }}>
+                {assignmentForm.submissionType === "essay"
+                  ? "作文/主观题可选上传纸质作业或草稿图片。"
+                  : "支持学生上传图片或 PDF 作业。"}
+              </div>
             </label>
           )}
           {assignmentForm.submissionType === "quiz" ? (
@@ -551,13 +555,17 @@ export default function TeacherPage() {
               ) : null}
             </>
           ) : null}
-          {assignmentForm.submissionType === "upload" ? (
+          {assignmentForm.submissionType !== "quiz" ? (
             <label>
               <div className="section-title">批改重点（可选）</div>
               <textarea
                 value={assignmentForm.gradingFocus}
                 onChange={(event) => setAssignmentForm((prev) => ({ ...prev, gradingFocus: event.target.value }))}
-                placeholder="例如：重视列式步骤、书写规范与验算。"
+                placeholder={
+                  assignmentForm.submissionType === "essay"
+                    ? "例如：结构完整、语言表达、错别字与标点。"
+                    : "例如：重视列式步骤、书写规范与验算。"
+                }
                 rows={3}
                 style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
               />
@@ -578,7 +586,7 @@ export default function TeacherPage() {
               <div className="card" key={item.id}>
                 <div className="section-title">{item.name}</div>
                 <p>
-                  {subjectLabel[item.subject] ?? item.subject} · {item.grade} 年级
+                  {SUBJECT_LABELS[item.subject] ?? item.subject} · {item.grade} 年级
                 </p>
                 <p>学生：{item.studentCount} 人</p>
                 <p>作业：{item.assignmentCount} 份</p>
@@ -618,7 +626,7 @@ export default function TeacherPage() {
                   <div className="section-title">{item.studentName}</div>
                   <p>{item.studentEmail}</p>
                   <p>
-                    班级：{item.className} · {subjectLabel[item.subject] ?? item.subject} · {item.grade} 年级
+                    班级：{item.className} · {SUBJECT_LABELS[item.subject] ?? item.subject} · {item.grade} 年级
                   </p>
                   <div className="cta-row">
                     <button className="button primary" type="button" onClick={() => handleApprove(item.id)}>
@@ -643,9 +651,10 @@ export default function TeacherPage() {
               <div className="card" key={item.id}>
                 <div className="section-title">{item.title}</div>
                 <p>
-                  {item.className} · {subjectLabel[item.classSubject] ?? item.classSubject} · {item.classGrade} 年级
+                  {item.className} · {SUBJECT_LABELS[item.classSubject] ?? item.classSubject} · {item.classGrade} 年级
                 </p>
                 <p>截止日期：{new Date(item.dueDate).toLocaleDateString("zh-CN")}</p>
+                <p>类型：{ASSIGNMENT_TYPE_LABELS[item.submissionType ?? "quiz"]}</p>
                 <p>
                   完成情况：{item.completed}/{item.total}
                 </p>

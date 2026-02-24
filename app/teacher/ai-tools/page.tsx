@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Card from "@/components/Card";
+import { SUBJECT_LABELS } from "@/lib/constants";
 
 type ClassItem = {
   id: string;
@@ -177,7 +178,7 @@ export default function TeacherAiToolsPage() {
             >
               {classes.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {item.name} · {item.subject} · {item.grade} 年级
+                  {item.name} · {SUBJECT_LABELS[item.subject] ?? item.subject} · {item.grade} 年级
                 </option>
               ))}
             </select>
@@ -314,7 +315,7 @@ export default function TeacherAiToolsPage() {
             >
               {classes.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {item.name} · {item.subject} · {item.grade} 年级
+                  {item.name} · {SUBJECT_LABELS[item.subject] ?? item.subject} · {item.grade} 年级
                 </option>
               ))}
             </select>
@@ -409,7 +410,7 @@ export default function TeacherAiToolsPage() {
             >
               {classes.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {item.name} · {item.subject} · {item.grade} 年级
+                  {item.name} · {SUBJECT_LABELS[item.subject] ?? item.subject} · {item.grade} 年级
                 </option>
               ))}
             </select>

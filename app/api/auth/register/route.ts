@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { createUser, getUserByEmail } from "@/lib/auth";
 import { upsertStudentProfile } from "@/lib/profiles";
+import { SUBJECT_OPTIONS } from "@/lib/constants";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
     await upsertStudentProfile({
       userId: id,
       grade: body.grade,
-      subjects: ["math", "chinese", "english"],
+      subjects: SUBJECT_OPTIONS.map((item) => item.value),
       target: "",
       school: ""
     });

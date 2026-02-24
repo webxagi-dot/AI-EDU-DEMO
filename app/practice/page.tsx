@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Card from "@/components/Card";
+import { GRADE_OPTIONS, SUBJECT_OPTIONS } from "@/lib/constants";
 
 type Question = {
   id: string;
@@ -113,7 +114,7 @@ export default function PracticePage() {
     }
   }
 
-  async function loadExplainPack(questionId: string) {
+  const loadExplainPack = useCallback(async (questionId: string) => {
     setExplainLoading(true);
     const res = await fetch("/api/practice/explanation", {
       method: "POST",
@@ -123,13 +124,13 @@ export default function PracticePage() {
     const data = await res.json();
     setExplainPack(data?.data ?? null);
     setExplainLoading(false);
-  }
+  }, []);
 
-  async function loadFavorite(questionId: string) {
+  const loadFavorite = useCallback(async (questionId: string) => {
     const res = await fetch(`/api/favorites/${questionId}`);
     const data = await res.json();
     setFavorite(data?.data ? { tags: data.data.tags ?? [] } : null);
-  }
+  }, []);
 
   async function toggleFavorite() {
     if (!question) return;
@@ -204,15 +205,18 @@ export default function PracticePage() {
     return () => clearInterval(timer);
   }, [timerRunning]);
 
-  useEffect(() => {
-    if (!question) return;
-    loadFavorite(question.id);
-  }, [question?.id]);
+  const questionId = question?.id;
+  const resultAnswer = result?.answer;
 
   useEffect(() => {
-    if (!question || !result) return;
-    loadExplainPack(question.id);
-  }, [question?.id, result?.answer]);
+    if (!questionId) return;
+    loadFavorite(questionId);
+  }, [loadFavorite, questionId]);
+
+  useEffect(() => {
+    if (!questionId || !resultAnswer) return;
+    loadExplainPack(questionId);
+  }, [loadExplainPack, questionId, resultAnswer]);
 
   function resetChallenge() {
     setChallengeCount(0);
@@ -247,9 +251,11 @@ export default function PracticePage() {
               onChange={(event) => setSubject(event.target.value)}
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
             >
-              <option value="math">数学</option>
-              <option value="chinese">语文</option>
-              <option value="english">英语</option>
+              {SUBJECT_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
             </select>
           </label>
           <label>
@@ -259,12 +265,11 @@ export default function PracticePage() {
               onChange={(event) => setGrade(event.target.value)}
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
             >
-              <option value="1">一年级</option>
-              <option value="2">二年级</option>
-              <option value="3">三年级</option>
-              <option value="4">四年级</option>
-              <option value="5">五年级</option>
-              <option value="6">六年级</option>
+              {GRADE_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
             </select>
           </label>
           <label>

@@ -3,12 +3,7 @@
 import { useEffect, useState } from "react";
 import Card from "@/components/Card";
 import EduIcon from "@/components/EduIcon";
-
-const subjectLabel: Record<string, string> = {
-  math: "数学",
-  chinese: "语文",
-  english: "英语"
-};
+import { SUBJECT_LABELS } from "@/lib/constants";
 
 export default function StudentGrowthPage() {
   const [data, setData] = useState<any>(null);
@@ -83,7 +78,7 @@ export default function StudentGrowthPage() {
           <div className="grid" style={{ gap: 12 }}>
             {data.subjects.map((item: any) => (
               <div className="card" key={item.subject}>
-                <div className="section-title">{subjectLabel[item.subject] ?? item.subject}</div>
+                <div className="section-title">{SUBJECT_LABELS[item.subject] ?? item.subject}</div>
                 <p>正确率 {item.accuracy}%</p>
                 <p>练习 {item.total} 题</p>
               </div>
@@ -101,7 +96,7 @@ export default function StudentGrowthPage() {
               <div className="card" key={item.id}>
                 <div className="section-title">{item.title}</div>
                 <p>
-                  {subjectLabel[item.subject] ?? item.subject} · {item.grade} 年级
+                  {SUBJECT_LABELS[item.subject] ?? item.subject} · {item.grade} 年级
                 </p>
                 <p>正确率 {item.ratio}% · 练习 {item.total} 次</p>
               </div>

@@ -43,7 +43,9 @@ export async function POST(request: Request) {
   const totalProgress = progress.length;
   const completionRate = totalProgress ? Math.round((completed / totalProgress) * 100) : 0;
 
-  const scored = progress.filter((item) => typeof item.score === "number" && typeof item.total === "number");
+  const scored = progress.filter(
+    (item) => typeof item.score === "number" && typeof item.total === "number" && (item.total ?? 0) > 0
+  );
   const scoreSum = scored.reduce((sum, item) => sum + (item.score ?? 0), 0);
   const totalSum = scored.reduce((sum, item) => sum + (item.total ?? 0), 0);
   const accuracy = totalSum ? Math.round((scoreSum / totalSum) * 100) : 0;

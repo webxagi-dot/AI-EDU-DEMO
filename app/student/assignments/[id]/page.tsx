@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/Card";
 import EduIcon from "@/components/EduIcon";
+import { ASSIGNMENT_TYPE_LABELS, SUBJECT_LABELS } from "@/lib/constants";
 
 type AssignmentDetail = {
   assignment: {
@@ -12,7 +13,7 @@ type AssignmentDetail = {
     description?: string;
     dueDate: string;
     createdAt: string;
-    submissionType?: "quiz" | "upload";
+    submissionType?: "quiz" | "upload" | "essay";
     maxUploads?: number;
     gradingFocus?: string;
   };
@@ -55,12 +56,6 @@ type UploadItem = {
   contentBase64?: string;
 };
 
-const subjectLabel: Record<string, string> = {
-  math: "数学",
-  chinese: "语文",
-  english: "英语"
-};
-
 export default function StudentAssignmentDetailPage({ params }: { params: { id: string } }) {
   const [data, setData] = useState<AssignmentDetail | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -72,7 +67,15 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
   const [submissionText, setSubmissionText] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  async function load() {
+  const loadUploads = useCallback(async () => {
+    const res = await fetch(`/api/student/assignments/${params.id}/uploads`);
+    const payload = await res.json();
+    if (res.ok) {
+      setUploads(payload.data ?? []);
+    }
+  }, [params.id]);
+
+  const load = useCallback(async () => {
     setError(null);
     const res = await fetch(`/api/student/assignments/${params.id}`);
     const payload = await res.json();
@@ -88,22 +91,14 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
         setReview(reviewPayload);
       }
     }
-    if (payload?.assignment?.submissionType === "upload") {
+    if (payload?.assignment?.submissionType === "upload" || payload?.assignment?.submissionType === "essay") {
       loadUploads();
     }
-  }
+  }, [loadUploads, params.id]);
 
   useEffect(() => {
     load();
-  }, []);
-
-  async function loadUploads() {
-    const res = await fetch(`/api/student/assignments/${params.id}/uploads`);
-    const payload = await res.json();
-    if (res.ok) {
-      setUploads(payload.data ?? []);
-    }
-  }
+  }, [load]);
 
   async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const files = event.target.files ? Array.from(event.target.files) : [];
@@ -174,6 +169,10 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
 
   const alreadyCompleted = data.progress?.status === "completed" && !result;
   const isUpload = data.assignment.submissionType === "upload";
+  const isEssay = data.assignment.submissionType === "essay";
+  const isQuiz = !isUpload && !isEssay;
+  const hasUploads = uploads.length > 0;
+  const hasText = Boolean(submissionText.trim());
 
   return (
     <div className="grid" style={{ gap: 18 }}>
@@ -181,7 +180,7 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
         <div>
           <h2>作业详情</h2>
           <div className="section-sub">
-            {data.class.name} · {subjectLabel[data.class.subject] ?? data.class.subject} · {data.class.grade} 年级
+            {data.class.name} · {SUBJECT_LABELS[data.class.subject] ?? data.class.subject} · {data.class.grade} 年级
           </div>
         </div>
         <span className="chip">{alreadyCompleted ? "已完成" : "进行中"}</span>
@@ -205,15 +204,19 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
             <p>{new Date(data.assignment.dueDate).toLocaleDateString("zh-CN")}</p>
             {data.progress?.status === "completed" ? (
               <div className="pill-list">
-                <span className="pill">
-                  得分 {data.progress?.score ?? 0}/{data.progress?.total ?? 0}
-                </span>
-                <span className="pill">{isUpload ? "上传作业" : "在线作答"}</span>
+                {isUpload || isEssay ? (
+                  <span className="pill">已提交待批改</span>
+                ) : (
+                  <span className="pill">
+                    得分 {data.progress?.score ?? 0}/{data.progress?.total ?? 0}
+                  </span>
+                )}
+                <span className="pill">{ASSIGNMENT_TYPE_LABELS[data.assignment.submissionType ?? "quiz"]}</span>
               </div>
             ) : (
               <div className="pill-list">
                 <span className="pill">等待提交</span>
-                <span className="pill">{isUpload ? "上传作业" : "在线作答"}</span>
+                <span className="pill">{ASSIGNMENT_TYPE_LABELS[data.assignment.submissionType ?? "quiz"]}</span>
               </div>
             )}
           </div>
@@ -225,9 +228,15 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
 
       <Card title="作业作答" tag="作答">
         {alreadyCompleted ? (
-          isUpload ? (
+          isUpload || isEssay ? (
             <div className="grid" style={{ gap: 10 }}>
               <p>已提交作业，等待老师批改。</p>
+              {review?.submission?.submissionText ? (
+                <div className="card">
+                  <div className="section-title">{isEssay ? "作文内容" : "作业备注"}</div>
+                  <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{review.submission.submissionText}</div>
+                </div>
+              ) : null}
               {uploads.length ? (
                 uploads.map((item) => (
                   <div className="card" key={item.id}>
@@ -246,10 +255,10 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
           )
         ) : (
           <form onSubmit={handleSubmit} style={{ display: "grid", gap: 16 }}>
-            {isUpload ? (
+            {isUpload || isEssay ? (
               <div className="grid" style={{ gap: 12 }}>
                 <div className="card">
-                  <div className="section-title">上传作业</div>
+                  <div className="section-title">{isEssay ? "上传作业图片（可选）" : "上传作业"}</div>
                   <div style={{ fontSize: 12, color: "var(--ink-1)" }}>
                     支持图片或 PDF，最多 {data.assignment.maxUploads ?? 3} 份，每份不超过 3MB。
                   </div>
@@ -279,12 +288,12 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
                   )}
                 </div>
                 <label>
-                  <div className="section-title">作业备注（可选）</div>
+                  <div className="section-title">{isEssay ? "作文内容" : "作业备注（可选）"}</div>
                   <textarea
                     value={submissionText}
                     onChange={(event) => setSubmissionText(event.target.value)}
-                    rows={3}
-                    placeholder="写下本次作业的思路或遇到的问题"
+                    rows={isEssay ? 10 : 3}
+                    placeholder={isEssay ? "请在此输入作文/主观题作答内容" : "写下本次作业的思路或遇到的问题"}
                     style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
                   />
                 </label>
@@ -315,13 +324,13 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
               ))
             )}
             {error ? <div style={{ color: "#b42318", fontSize: 13 }}>{error}</div> : null}
-            {isUpload && uploads.length === 0 ? (
+            {isUpload && !hasUploads ? (
               <div style={{ fontSize: 12, color: "var(--ink-1)" }}>请先上传作业文件。</div>
             ) : null}
             <button
               className="button primary"
               type="submit"
-              disabled={loading || (isUpload && uploads.length === 0)}
+              disabled={loading || (isUpload && !hasUploads) || (isEssay && !hasUploads && !hasText)}
             >
               {loading ? "提交中..." : "提交作业"}
             </button>
@@ -329,7 +338,7 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
         )}
       </Card>
 
-      {result && !isUpload ? (
+      {result && isQuiz ? (
         <Card title="提交结果" tag="成绩">
           <div className="pill-list">
             <span className="pill">
@@ -355,7 +364,7 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
         </Card>
       ) : null}
 
-      {result && isUpload ? (
+      {result && (isUpload || isEssay) ? (
         <Card title="提交结果" tag="已提交">
           <p>作业已提交，等待老师批改。</p>
         </Card>
@@ -412,10 +421,47 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
               ))}
             </div>
           ) : null}
+          {review.aiReview.result?.writing ? (
+            <div className="card" style={{ marginTop: 12 }}>
+              <div className="section-title">写作评分</div>
+              <div className="pill-list" style={{ marginTop: 8 }}>
+                <span className="pill">结构 {review.aiReview.result.writing.scores?.structure ?? 0}</span>
+                <span className="pill">语法 {review.aiReview.result.writing.scores?.grammar ?? 0}</span>
+                <span className="pill">词汇 {review.aiReview.result.writing.scores?.vocab ?? 0}</span>
+              </div>
+              <p style={{ marginTop: 8 }}>{review.aiReview.result.writing.summary ?? "暂无写作总结。"}</p>
+              {review.aiReview.result.writing.strengths?.length ? (
+                <div style={{ marginTop: 8 }}>
+                  <div className="section-title">写作优点</div>
+                  <ul style={{ margin: "6px 0 0 16px" }}>
+                    {review.aiReview.result.writing.strengths.map((item: string) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {review.aiReview.result.writing.improvements?.length ? (
+                <div style={{ marginTop: 8 }}>
+                  <div className="section-title">改进建议</div>
+                  <ul style={{ margin: "6px 0 0 16px" }}>
+                    {review.aiReview.result.writing.improvements.map((item: string) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {review.aiReview.result.writing.corrected ? (
+                <div style={{ marginTop: 8 }}>
+                  <div className="section-title">修改示例</div>
+                  <div style={{ whiteSpace: "pre-wrap" }}>{review.aiReview.result.writing.corrected}</div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </Card>
       ) : null}
 
-      {review?.questions ? (
+      {review?.questions && isQuiz ? (
         <Card title="错题复盘" tag="复盘">
           <div className="grid" style={{ gap: 12 }}>
             {review.questions

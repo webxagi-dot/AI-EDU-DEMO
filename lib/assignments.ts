@@ -10,7 +10,7 @@ export type Assignment = {
   description?: string;
   dueDate: string;
   createdAt: string;
-  submissionType?: "quiz" | "upload";
+  submissionType?: "quiz" | "upload" | "essay";
   maxUploads?: number;
   gradingFocus?: string;
 };
@@ -451,8 +451,8 @@ export async function createAssignment(input: {
 export async function completeAssignmentProgress(input: {
   assignmentId: string;
   studentId: string;
-  score: number;
-  total: number;
+  score: number | null;
+  total: number | null;
 }): Promise<AssignmentProgress> {
   const completedAt = new Date().toISOString();
 
@@ -467,8 +467,8 @@ export async function completeAssignmentProgress(input: {
       studentId: input.studentId,
       status: "completed",
       completedAt,
-      score: input.score,
-      total: input.total
+      score: input.score ?? undefined,
+      total: input.total ?? undefined
     };
     if (index >= 0) {
       list[index] = updated;
@@ -486,7 +486,7 @@ export async function completeAssignmentProgress(input: {
       `INSERT INTO assignment_progress (id, assignment_id, student_id, status, completed_at, score, total)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [id, input.assignmentId, input.studentId, "completed", completedAt, input.score, input.total]
+      [id, input.assignmentId, input.studentId, "completed", completedAt, input.score ?? null, input.total ?? null]
     );
     return row
       ? mapAssignmentProgress(row)
@@ -496,8 +496,8 @@ export async function completeAssignmentProgress(input: {
           studentId: input.studentId,
           status: "completed",
           completedAt,
-          score: input.score,
-          total: input.total
+          score: input.score ?? undefined,
+          total: input.total ?? undefined
         };
   }
 
@@ -509,8 +509,16 @@ export async function completeAssignmentProgress(input: {
          total = $5
      WHERE assignment_id = $1 AND student_id = $2
      RETURNING *`,
-    [input.assignmentId, input.studentId, completedAt, input.score, input.total]
+    [input.assignmentId, input.studentId, completedAt, input.score ?? null, input.total ?? null]
   );
 
-  return row ? mapAssignmentProgress(row) : { ...existing, status: "completed", completedAt, score: input.score, total: input.total };
+  return row
+    ? mapAssignmentProgress(row)
+    : {
+        ...existing,
+        status: "completed",
+        completedAt,
+        score: input.score ?? undefined,
+        total: input.total ?? undefined
+      };
 }

@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { createClass, getClassesByTeacher, getClassStudentIds } from "@/lib/classes";
 import type { Subject } from "@/lib/types";
 import { getAssignmentsByClass } from "@/lib/assignments";
+import { SUBJECT_OPTIONS } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
   if (!body.name || !body.subject || !body.grade) {
     return NextResponse.json({ error: "missing fields" }, { status: 400 });
   }
-  const allowedSubjects: Subject[] = ["math", "chinese", "english"];
+  const allowedSubjects: Subject[] = SUBJECT_OPTIONS.map((item) => item.value as Subject);
   if (!allowedSubjects.includes(body.subject as Subject)) {
     return NextResponse.json({ error: "invalid subject" }, { status: 400 });
   }

@@ -4,9 +4,10 @@ import { createKnowledgePoint, getKnowledgePoints } from "@/lib/content";
 import { generateKnowledgeTreeDraft } from "@/lib/ai";
 import { addAdminLog } from "@/lib/admin-log";
 import type { Subject } from "@/lib/types";
+import { SUBJECT_OPTIONS } from "@/lib/constants";
 export const dynamic = "force-dynamic";
 
-const ALLOWED_SUBJECTS: Subject[] = ["math", "chinese", "english"];
+const ALLOWED_SUBJECTS: Subject[] = SUBJECT_OPTIONS.map((item) => item.value as Subject);
 
 function normalizeKey(unit: string, chapter: string, title: string) {
   return `${unit}`.toLowerCase().replace(/\s+/g, "") + "|" + `${chapter}`.toLowerCase().replace(/\s+/g, "") + "|" + `${title}`.toLowerCase().replace(/\s+/g, "");

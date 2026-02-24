@@ -26,7 +26,7 @@ export default function AdminPage() {
         <Card title="知识点树" tag="大纲">
           <div className="feature-card">
             <EduIcon name="book" />
-            <p>人教版小学：学科 → 年级 → 单元 → 知识点。</p>
+          <p>K12 学科：学科 → 年级 → 单元 → 知识点。</p>
           </div>
           <div className="cta-row">
             <Link className="button secondary" href="/admin/knowledge-points">

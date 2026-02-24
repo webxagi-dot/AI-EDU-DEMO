@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { getClassById } from "@/lib/classes";
+import { getClassById, getClassStudentIds } from "@/lib/classes";
 import { getAssignmentById } from "@/lib/assignments";
 import { getAssignmentUploads } from "@/lib/assignment-uploads";
 
@@ -26,6 +26,10 @@ export async function GET(request: Request, context: { params: { id: string } })
   const klass = await getClassById(assignment.classId);
   if (!klass || klass.teacherId !== user.id) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
+  }
+  const studentIds = await getClassStudentIds(klass.id);
+  if (!studentIds.includes(studentId)) {
+    return NextResponse.json({ error: "student not in class" }, { status: 404 });
   }
 
   const uploads = await getAssignmentUploads(assignment.id, studentId);

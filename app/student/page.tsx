@@ -4,18 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/Card";
 import EduIcon from "@/components/EduIcon";
+import { SUBJECT_LABELS } from "@/lib/constants";
 
 type PlanItem = {
   knowledgePointId: string;
   targetCount: number;
   dueDate: string;
   subject?: string;
-};
-
-const subjectLabel: Record<string, string> = {
-  math: "数学",
-  chinese: "语文",
-  english: "英语"
 };
 
 export default function StudentPage() {
@@ -89,7 +84,7 @@ export default function StudentPage() {
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             {plan.slice(0, 3).map((item) => (
               <li key={item.knowledgePointId}>
-                {item.subject ? `【${subjectLabel[item.subject] ?? item.subject}】` : ""}练习 {item.targetCount} 题，截止{" "}
+                {item.subject ? `【${SUBJECT_LABELS[item.subject] ?? item.subject}】` : ""}练习 {item.targetCount} 题，截止{" "}
                 {new Date(item.dueDate).toLocaleDateString("zh-CN")}
               </li>
             ))}
@@ -237,13 +232,13 @@ export default function StudentPage() {
             查看画像
           </Link>
         </Card>
-        <Card title="写作批改" tag="表达">
+        <Card title="作业批改" tag="表达">
           <div className="feature-card">
             <EduIcon name="pencil" />
-            <p>作文/英语写作结构语法词汇批改。</p>
+            <p>作文/主观题与作业上传统一批改入口。</p>
           </div>
-          <Link className="button secondary" href="/writing" style={{ marginTop: 12 }}>
-            进入批改
+          <Link className="button secondary" href="/student/assignments" style={{ marginTop: 12 }}>
+            进入作业中心
           </Link>
         </Card>
         <Card title="挑战任务" tag="成长">

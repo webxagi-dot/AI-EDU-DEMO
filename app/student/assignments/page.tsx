@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/Card";
 import EduIcon from "@/components/EduIcon";
+import { ASSIGNMENT_TYPE_LABELS, SUBJECT_LABELS } from "@/lib/constants";
 
 type AssignmentItem = {
   id: string;
@@ -16,13 +17,7 @@ type AssignmentItem = {
   score: number | null;
   total: number | null;
   completedAt: string | null;
-  submissionType?: "quiz" | "upload";
-};
-
-const subjectLabel: Record<string, string> = {
-  math: "数学",
-  chinese: "语文",
-  english: "英语"
+  submissionType?: "quiz" | "upload" | "essay";
 };
 
 export default function StudentAssignmentsPage() {
@@ -72,16 +67,20 @@ export default function StudentAssignmentsPage() {
                 <div className="feature-card">
                   <EduIcon name="pencil" />
                   <p>
-                    {item.className} · {subjectLabel[item.classSubject] ?? item.classSubject} · {item.classGrade} 年级
+                    {item.className} · {SUBJECT_LABELS[item.classSubject] ?? item.classSubject} · {item.classGrade} 年级
                   </p>
                 </div>
                 <div className="pill-list" style={{ marginTop: 8 }}>
                   <span className="pill">截止 {new Date(item.dueDate).toLocaleDateString("zh-CN")}</span>
-                  <span className="pill">{item.submissionType === "upload" ? "上传作业" : "在线作答"}</span>
+                  <span className="pill">{ASSIGNMENT_TYPE_LABELS[item.submissionType ?? "quiz"]}</span>
                   {item.status === "completed" ? (
-                    <span className="pill">
-                      得分 {item.score ?? 0}/{item.total ?? 0}
-                    </span>
+                    item.submissionType && item.submissionType !== "quiz" ? (
+                      <span className="pill">已提交待批改</span>
+                    ) : (
+                      <span className="pill">
+                        得分 {item.score ?? 0}/{item.total ?? 0}
+                      </span>
+                    )
                   ) : (
                     <span className="pill">等待提交</span>
                   )}

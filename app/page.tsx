@@ -8,10 +8,10 @@ export default function Home() {
     <div className="grid" style={{ gap: 28 }}>
       <section className="hero hero-stage">
         <div>
-          <div className="badge">航科AI教育 · 小学课后辅导</div>
+          <div className="badge">航科AI教育 · K12 学习助手</div>
           <h1>让孩子学得更有趣，学得更扎实</h1>
           <p>
-            面向小学 1-6 年级，紧贴人教版知识点。通过 AI 诊断测评、分层讲解、
+            覆盖小学到高中，支持多学科与分层教学。通过 AI 诊断测评、分层讲解、
             间隔复习与个性化练习，帮助孩子看到持续进步。
           </p>
           <div className="cta-row">
@@ -91,10 +91,10 @@ export default function Home() {
       </section>
 
       <section className="grid grid-3">
-        <Card title="写作批改" tag="表达">
+        <Card title="作业批改" tag="表达">
           <div className="feature-card">
             <EduIcon name="pencil" />
-            <p>结构、语法、词汇多维度评分与改进建议。</p>
+            <p>作文/主观题与作业上传统一批改。</p>
           </div>
         </Card>
         <Card title="挑战任务" tag="成长">

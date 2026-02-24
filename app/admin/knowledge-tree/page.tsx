@@ -2,12 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Card from "@/components/Card";
-
-const subjectLabel: Record<string, string> = {
-  math: "数学",
-  chinese: "语文",
-  english: "英语"
-};
+import { SUBJECT_LABELS } from "@/lib/constants";
 
 type KnowledgePoint = {
   id: string;
@@ -52,7 +47,7 @@ export default function KnowledgeTreePage() {
         <div className="grid" style={{ gap: 12, marginTop: 12 }}>
           {Object.entries(tree).map(([subject, gradeMap]) => (
             <div className="card" key={subject}>
-              <div className="section-title">{subjectLabel[subject] ?? subject}</div>
+              <div className="section-title">{SUBJECT_LABELS[subject] ?? subject}</div>
               <div className="grid" style={{ gap: 8, marginTop: 8 }}>
                 {Object.entries(gradeMap).map(([grade, unitMap]) => (
                   <div key={`${subject}-${grade}`}>

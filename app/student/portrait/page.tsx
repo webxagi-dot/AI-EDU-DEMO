@@ -46,13 +46,13 @@ export default function PortraitPage() {
       .then((data) => setAbilities(data?.data?.abilities ?? []));
   }, []);
 
-  const normalized = abilities.length ? abilities : [];
+  const normalized = abilities;
   const size = 260;
   const center = size / 2;
   const radius = 90;
   const gridLevels = [0.25, 0.5, 0.75, 1];
 
-  const polygonPoints = useMemo(() => buildPolygonPoints(normalized, radius, center), [normalized]);
+  const polygonPoints = useMemo(() => buildPolygonPoints(normalized, radius, center), [center, normalized, radius]);
 
   return (
     <div className="grid" style={{ gap: 18 }}>
