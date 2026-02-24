@@ -5,6 +5,8 @@ import type { Question } from "./types";
 import { isDbEnabled, query, queryOne } from "./db";
 import { updateMemorySchedule } from "./memory";
 import { getReviewItemsByStudent } from "./reviews";
+import { getFocusSessionsByUser } from "./focus";
+import { getFavoritesByUser } from "./favorites";
 
 export type QuestionAttempt = {
   id: string;
@@ -588,6 +590,8 @@ export async function getBadges(userId: string) {
   const attempts = await getAttemptsByUser(userId);
   const streak = await getStreak(userId);
   const weekly = await getAccuracyLastDays(userId, 7);
+  const focusSessions = await getFocusSessionsByUser(userId);
+  const favorites = await getFavoritesByUser(userId);
   const badges: { id: string; title: string; description: string }[] = [];
 
   if (attempts.length >= 1) {
@@ -601,6 +605,23 @@ export async function getBadges(userId: string) {
   }
   if (attempts.length >= 50) {
     badges.push({ id: "practice-50", title: "学习达人", description: "完成 50 道题" });
+  }
+  const focusCount = focusSessions.filter((item) => item.mode === "focus").length;
+  const focusMinutes = focusSessions
+    .filter((item) => item.mode === "focus")
+    .reduce((sum, item) => sum + item.durationMinutes, 0);
+  if (focusCount >= 3) {
+    badges.push({ id: "focus-3", title: "专注三连", description: "完成 3 次专注计时" });
+  }
+  if (focusMinutes >= 120) {
+    badges.push({ id: "focus-120", title: "专注达人", description: "累计专注 120 分钟" });
+  }
+  if (favorites.length >= 5) {
+    badges.push({ id: "fav-5", title: "收藏小能手", description: "收藏 5 道题" });
+  }
+  const tagged = favorites.filter((item) => item.tags?.length).length;
+  if (tagged >= 3) {
+    badges.push({ id: "tag-3", title: "分类高手", description: "为 3 道题添加标签" });
   }
   return badges;
 }

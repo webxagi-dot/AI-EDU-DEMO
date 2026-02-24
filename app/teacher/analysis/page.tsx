@@ -21,12 +21,32 @@ type HeatItem = {
   total: number;
 };
 
+type StudentItem = {
+  id: string;
+  name: string;
+  email: string;
+  grade?: string;
+};
+
+type FavoriteItem = {
+  id: string;
+  tags: string[];
+  question?: {
+    stem: string;
+    knowledgePointTitle: string;
+    grade: string;
+  } | null;
+};
+
 export default function TeacherAnalysisPage() {
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [classId, setClassId] = useState("");
   const [heatmap, setHeatmap] = useState<HeatItem[]>([]);
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [students, setStudents] = useState<StudentItem[]>([]);
+  const [studentId, setStudentId] = useState("");
+  const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
 
   useEffect(() => {
     fetch("/api/teacher/classes")
@@ -53,6 +73,31 @@ export default function TeacherAnalysisPage() {
       loadHeatmap(classId);
     }
   }, [classId]);
+
+  useEffect(() => {
+    if (!classId) return;
+    fetch(`/api/teacher/classes/${classId}/students`)
+      .then((res) => res.json())
+      .then((data) => {
+        const list = data.data ?? [];
+        setStudents(list);
+        if (list.length) {
+          setStudentId(list[0].id);
+        } else {
+          setStudentId("");
+        }
+      });
+  }, [classId]);
+
+  useEffect(() => {
+    if (!studentId) {
+      setFavorites([]);
+      return;
+    }
+    fetch(`/api/teacher/favorites?studentId=${studentId}`)
+      .then((res) => res.json())
+      .then((data) => setFavorites(data.data ?? []));
+  }, [studentId]);
 
   async function generateReport() {
     if (!classId) return;
@@ -172,6 +217,43 @@ export default function TeacherAnalysisPage() {
             ) : null}
           </div>
         ) : null}
+      </Card>
+
+      <Card title="学生收藏题目" tag="收藏">
+        <div className="grid grid-2">
+          <label>
+            <div className="section-title">选择学生</div>
+            <select
+              value={studentId}
+              onChange={(event) => setStudentId(event.target.value)}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            >
+              {students.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name} · {item.grade ?? "-"} 年级
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="card" style={{ alignSelf: "end" }}>
+            <div className="section-title">收藏数量</div>
+            <div style={{ fontSize: 20, fontWeight: 700 }}>{favorites.length}</div>
+          </div>
+        </div>
+        <div className="grid" style={{ gap: 10, marginTop: 12 }}>
+          {favorites.length === 0 ? <p>暂无收藏记录。</p> : null}
+          {favorites.slice(0, 6).map((item) => (
+            <div className="card" key={item.id}>
+              <div className="section-title">{item.question?.stem ?? "题目"}</div>
+              <div style={{ fontSize: 12, color: "var(--ink-1)" }}>
+                {item.question?.knowledgePointTitle ?? "知识点"} · {item.question?.grade ?? "-"} 年级
+              </div>
+              <div style={{ fontSize: 12, color: "var(--ink-1)", marginTop: 6 }}>
+                标签：{item.tags?.length ? item.tags.join("、") : "未设置"}
+              </div>
+            </div>
+          ))}
+        </div>
       </Card>
     </div>
   );

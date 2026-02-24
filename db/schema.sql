@@ -148,6 +148,32 @@ CREATE TABLE IF NOT EXISTS challenge_claims (
 
 CREATE INDEX IF NOT EXISTS challenge_claims_user_idx ON challenge_claims (user_id);
 
+CREATE TABLE IF NOT EXISTS focus_sessions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  mode TEXT NOT NULL,
+  duration_minutes INT NOT NULL,
+  started_at TIMESTAMPTZ,
+  ended_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS focus_sessions_user_idx ON focus_sessions (user_id);
+CREATE INDEX IF NOT EXISTS focus_sessions_created_idx ON focus_sessions (created_at);
+
+CREATE TABLE IF NOT EXISTS question_favorites (
+  id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  question_id TEXT REFERENCES questions(id) ON DELETE CASCADE,
+  tags TEXT[] NOT NULL DEFAULT '{}',
+  note TEXT,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL,
+  UNIQUE (user_id, question_id)
+);
+
+CREATE INDEX IF NOT EXISTS question_favorites_user_idx ON question_favorites (user_id);
+
 CREATE TABLE IF NOT EXISTS classes (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,

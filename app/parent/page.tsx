@@ -14,6 +14,7 @@ export default function ParentPage() {
   const [assignmentSummary, setAssignmentSummary] = useState<any>(null);
   const [assignmentReminder, setAssignmentReminder] = useState("");
   const [assignmentCopied, setAssignmentCopied] = useState(false);
+  const [favorites, setFavorites] = useState<any[]>([]);
 
   useEffect(() => {
     fetch("/api/report/weekly")
@@ -32,6 +33,9 @@ export default function ParentPage() {
         setAssignmentSummary(data.summary ?? null);
         setAssignmentReminder(data.reminderText ?? "");
       });
+    fetch("/api/parent/favorites")
+      .then((res) => res.json())
+      .then((data) => setFavorites(data.data ?? []));
   }, []);
 
   if (!report) {
@@ -222,6 +226,29 @@ export default function ParentPage() {
             {assignmentCopied ? "已复制" : "复制作业提醒"}
           </button>
         </div>
+      </Card>
+      <Card title="收藏题目" tag="复习">
+        <div className="feature-card">
+          <EduIcon name="book" />
+          <p>孩子收藏的重点题目与标签。</p>
+        </div>
+        {favorites.length ? (
+          <div className="grid" style={{ gap: 8, marginTop: 12 }}>
+            {favorites.slice(0, 5).map((item) => (
+              <div className="card" key={item.id}>
+                <div className="section-title">{item.question?.stem ?? "题目"}</div>
+                <div style={{ fontSize: 12, color: "var(--ink-1)" }}>
+                  {item.question?.knowledgePointTitle ?? "知识点"} · {item.question?.grade ?? "-"} 年级
+                </div>
+                <div style={{ fontSize: 12, color: "var(--ink-1)", marginTop: 6 }}>
+                  标签：{item.tags?.length ? item.tags.join("、") : "未设置"}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p style={{ marginTop: 8 }}>暂无收藏记录。</p>
+        )}
       </Card>
     </div>
   );

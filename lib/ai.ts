@@ -75,6 +75,13 @@ export type WrongReviewScript = {
   reminders: string[];
 };
 
+export type ExplainVariants = {
+  text: string;
+  visual: string;
+  analogy: string;
+  provider: string;
+};
+
 export type LearningReport = {
   report: string;
   highlights: string[];
@@ -356,6 +363,72 @@ export async function generateVariantDrafts(payload: {
   });
 
   return drafts.length ? drafts.slice(0, count) : null;
+}
+
+function buildExplainFallback(payload: {
+  stem: string;
+  explanation?: string;
+  knowledgePointTitle?: string;
+}) {
+  const base = (payload.explanation ?? "").trim() || `这道题考查${payload.knowledgePointTitle ?? "基础概念"}。`;
+  const parts = base
+    .split(/[。！？!?.]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 3);
+  const visual = parts.length
+    ? `图解思路：\n${parts.map((item, idx) => `${idx + 1}) ${item}`).join("\n")}`
+    : `图解思路：先读题找关键信息，再代入公式计算。`;
+  const analogy = `生活类比：把题目理解成生活中的“小份量比较”或“分配问题”，${base}`;
+  return {
+    text: base,
+    visual,
+    analogy,
+    provider: "rule"
+  };
+}
+
+export async function generateExplainVariants(payload: {
+  subject: string;
+  grade: string;
+  stem: string;
+  answer: string;
+  explanation?: string;
+  knowledgePointTitle?: string;
+}) {
+  const provider = process.env.LLM_PROVIDER ?? "mock";
+  if (provider === "mock") {
+    return buildExplainFallback(payload);
+  }
+
+  const context = [
+    `学科：${payload.subject}`,
+    `年级：${payload.grade}`,
+    payload.knowledgePointTitle ? `知识点：${payload.knowledgePointTitle}` : ""
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const userPrompt = `${context}\n题目：${payload.stem}\n答案：${payload.answer}\n解析：${payload.explanation ?? ""}\n请给出三种版本讲解：文字版、图解版、生活类比版。输出 JSON：{\"text\":\"...\",\"visual\":\"...\",\"analogy\":\"...\"}。不要输出多余文本。`;
+
+  let text: string | null = null;
+  if (provider === "zhipu" || provider === "compatible") {
+    text = await callZhipuLLM([
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: userPrompt }
+    ]);
+  } else if (provider === "custom") {
+    text = await callCustomLLM(`${SYSTEM_PROMPT}\n${userPrompt}`);
+  }
+
+  if (!text) return buildExplainFallback(payload);
+  const parsed = extractJson(text);
+  if (!parsed || typeof parsed !== "object") return buildExplainFallback(payload);
+  const textExplain = String((parsed as any).text ?? "").trim();
+  const visual = String((parsed as any).visual ?? "").trim();
+  const analogy = String((parsed as any).analogy ?? "").trim();
+  if (!textExplain || !visual || !analogy) return buildExplainFallback(payload);
+  return { text: textExplain, visual, analogy, provider };
 }
 
 export async function generateWritingFeedback(payload: {

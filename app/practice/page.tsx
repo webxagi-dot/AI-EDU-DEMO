@@ -25,6 +25,13 @@ type Variant = {
   explanation: string;
 };
 
+type ExplainPack = {
+  text: string;
+  visual: string;
+  analogy: string;
+  provider?: string;
+};
+
 export default function PracticePage() {
   const searchParams = useSearchParams();
   const [subject, setSubject] = useState("math");
@@ -44,6 +51,11 @@ export default function PracticePage() {
   const [variantAnswers, setVariantAnswers] = useState<Record<number, string>>({});
   const [variantResults, setVariantResults] = useState<Record<number, boolean | null>>({});
   const [loadingVariants, setLoadingVariants] = useState(false);
+  const [favorite, setFavorite] = useState<{ tags: string[] } | null>(null);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [explainMode, setExplainMode] = useState<"text" | "visual" | "analogy">("text");
+  const [explainPack, setExplainPack] = useState<ExplainPack | null>(null);
+  const [explainLoading, setExplainLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/knowledge-points")
@@ -82,6 +94,8 @@ export default function PracticePage() {
     setVariantPack(null);
     setVariantAnswers({});
     setVariantResults({});
+    setExplainPack(null);
+    setExplainMode("text");
   }
 
   async function submitAnswer() {
@@ -97,6 +111,59 @@ export default function PracticePage() {
       setChallengeCount((prev) => prev + 1);
       setChallengeCorrect((prev) => prev + (data.correct ? 1 : 0));
     }
+  }
+
+  async function loadExplainPack(questionId: string) {
+    setExplainLoading(true);
+    const res = await fetch("/api/practice/explanation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ questionId })
+    });
+    const data = await res.json();
+    setExplainPack(data?.data ?? null);
+    setExplainLoading(false);
+  }
+
+  async function loadFavorite(questionId: string) {
+    const res = await fetch(`/api/favorites/${questionId}`);
+    const data = await res.json();
+    setFavorite(data?.data ? { tags: data.data.tags ?? [] } : null);
+  }
+
+  async function toggleFavorite() {
+    if (!question) return;
+    setFavoriteLoading(true);
+    if (favorite) {
+      await fetch(`/api/favorites/${question.id}`, { method: "DELETE" });
+      setFavorite(null);
+    } else {
+      const res = await fetch("/api/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ questionId: question.id, tags: [] })
+      });
+      const data = await res.json();
+      setFavorite(data?.data ? { tags: data.data.tags ?? [] } : null);
+    }
+    setFavoriteLoading(false);
+  }
+
+  async function editFavoriteTags() {
+    if (!question) return;
+    const input = prompt("输入标签（用逗号分隔）", favorite?.tags?.join(",") ?? "");
+    if (input === null) return;
+    const tags = input
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+    const res = await fetch(`/api/favorites/${question.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tags })
+    });
+    const data = await res.json();
+    setFavorite(data?.data ? { tags: data.data.tags ?? [] } : null);
   }
 
   async function loadVariants() {
@@ -136,6 +203,16 @@ export default function PracticePage() {
     }, 1000);
     return () => clearInterval(timer);
   }, [timerRunning]);
+
+  useEffect(() => {
+    if (!question) return;
+    loadFavorite(question.id);
+  }, [question?.id]);
+
+  useEffect(() => {
+    if (!question || !result) return;
+    loadExplainPack(question.id);
+  }, [question?.id, result?.answer]);
 
   function resetChallenge() {
     setChallengeCount(0);
@@ -252,6 +329,17 @@ export default function PracticePage() {
       {question ? (
         <Card title="题目" tag="作答">
           <p>{question.stem}</p>
+          <div className="cta-row" style={{ marginTop: 8 }}>
+            <button className="button secondary" onClick={toggleFavorite} disabled={favoriteLoading}>
+              {favorite ? "已收藏" : "收藏"}
+            </button>
+            <button className="button secondary" onClick={editFavoriteTags} disabled={!favorite}>
+              标签
+            </button>
+            {favorite?.tags?.length ? (
+              <div style={{ fontSize: 12, color: "var(--ink-1)" }}>标签：{favorite.tags.join("、")}</div>
+            ) : null}
+          </div>
           <div className="grid" style={{ gap: 8, marginTop: 12 }}>
             {question.options.map((option) => (
               <label className="card" key={option} style={{ cursor: "pointer" }}>
@@ -281,7 +369,29 @@ export default function PracticePage() {
         <Card title="解析" tag="讲解">
           <div className="badge">{result.correct ? "回答正确" : "回答错误"}</div>
           <p style={{ marginTop: 8 }}>正确答案：{result.answer}</p>
-          <p>{result.explanation}</p>
+          <div className="cta-row" style={{ marginTop: 8 }}>
+            <button className="button secondary" onClick={() => setExplainMode("text")}>
+              文字版
+            </button>
+            <button className="button secondary" onClick={() => setExplainMode("visual")}>
+              图解版
+            </button>
+            <button className="button secondary" onClick={() => setExplainMode("analogy")}>
+              类比版
+            </button>
+          </div>
+          <div style={{ marginTop: 10, whiteSpace: "pre-wrap" }}>
+            {explainLoading
+              ? "解析生成中..."
+              : explainPack
+              ? explainPack[explainMode]
+              : result.explanation}
+          </div>
+          {explainPack?.provider ? (
+            <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-1)" }}>
+              解析来源：{explainPack.provider}
+            </div>
+          ) : null}
           <div className="cta-row" style={{ marginTop: 12 }}>
             <button className="button secondary" onClick={loadVariants}>
               {loadingVariants ? "生成中..." : "AI 错题讲解 + 变式训练"}

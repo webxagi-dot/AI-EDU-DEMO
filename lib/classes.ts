@@ -334,6 +334,23 @@ export async function getJoinRequestsByStudent(studentId: string): Promise<Class
   }));
 }
 
+export async function isStudentInTeacherClasses(teacherId: string, studentId: string) {
+  if (!isDbEnabled()) {
+    const classes = await getClassesByTeacher(teacherId);
+    const classIds = new Set(classes.map((item) => item.id));
+    const classStudents = readJson<ClassStudent[]>(CLASS_STUDENT_FILE, []);
+    return classStudents.some((item) => classIds.has(item.classId) && item.studentId === studentId);
+  }
+  const rows = await query<{ id: string }>(
+    `SELECT cs.id FROM class_students cs
+     JOIN classes c ON cs.class_id = c.id
+     WHERE c.teacher_id = $1 AND cs.student_id = $2
+     LIMIT 1`,
+    [teacherId, studentId]
+  );
+  return rows.length > 0;
+}
+
 export async function createJoinRequest(classId: string, studentId: string): Promise<ClassJoinRequest> {
   const createdAt = new Date().toISOString();
   if (!isDbEnabled()) {

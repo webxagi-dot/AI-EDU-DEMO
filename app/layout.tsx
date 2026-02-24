@@ -23,6 +23,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/tutor">AI 辅导</Link>
               <Link href="/coach">学习陪练</Link>
               <Link href="/practice">练习</Link>
+              <Link href="/focus">专注计时</Link>
               <Link href="/reading">朗读评分</Link>
               <Link href="/writing">写作批改</Link>
               <Link href="/challenge">挑战任务</Link>

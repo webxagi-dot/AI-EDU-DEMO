@@ -201,6 +201,24 @@ export default function StudentPage() {
             开始朗读
           </Link>
         </Card>
+        <Card title="专注计时" tag="专注">
+          <div className="feature-card">
+            <EduIcon name="board" />
+            <p>番茄钟专注训练 + 休息建议。</p>
+          </div>
+          <Link className="button secondary" href="/focus" style={{ marginTop: 12 }}>
+            开启专注
+          </Link>
+        </Card>
+        <Card title="题目收藏夹" tag="收藏">
+          <div className="feature-card">
+            <EduIcon name="book" />
+            <p>收藏题目并添加标签，便于复习。</p>
+          </div>
+          <Link className="button secondary" href="/student/favorites" style={{ marginTop: 12 }}>
+            查看收藏
+          </Link>
+        </Card>
         <Card title="记忆曲线复习" tag="复习">
           <div className="feature-card">
             <EduIcon name="chart" />
