@@ -16,8 +16,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   > = {
     student: [
       { href: "/student", label: "学生端" },
+      { href: "/course", label: "课程主页" },
       { href: "/student/assignments", label: "作业中心" },
       { href: "/student/modules", label: "课程模块" },
+      { href: "/discussions", label: "讨论区" },
+      { href: "/files", label: "文件中心" },
+      { href: "/inbox", label: "收件箱" },
       { href: "/diagnostic", label: "诊断测评" },
       { href: "/plan", label: "学习计划" },
       { href: "/practice", label: "练习" },
@@ -35,15 +39,23 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     ],
     teacher: [
       { href: "/teacher", label: "教师端" },
+      { href: "/course", label: "课程主页" },
       { href: "/teacher/gradebook", label: "成绩册" },
       { href: "/teacher/modules", label: "课程模块" },
       { href: "/teacher/analysis", label: "学情分析" },
       { href: "/teacher/ai-tools", label: "教师 AI 工具" },
+      { href: "/discussions", label: "讨论区" },
+      { href: "/files", label: "文件中心" },
+      { href: "/inbox", label: "收件箱" },
       { href: "/calendar", label: "教学日程" },
       { href: "/announcements", label: "班级公告" }
     ],
     parent: [
       { href: "/parent", label: "家长端" },
+      { href: "/course", label: "课程主页" },
+      { href: "/discussions", label: "讨论区" },
+      { href: "/files", label: "文件中心" },
+      { href: "/inbox", label: "收件箱" },
       { href: "/calendar", label: "学习日程" },
       { href: "/announcements", label: "班级公告" },
       { href: "/notifications", label: "通知中心" }

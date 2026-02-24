@@ -251,6 +251,74 @@ CREATE TABLE IF NOT EXISTS module_resources (
   created_at TIMESTAMPTZ NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS course_syllabi (
+  id TEXT PRIMARY KEY,
+  class_id TEXT UNIQUE REFERENCES classes(id) ON DELETE CASCADE,
+  summary TEXT,
+  objectives TEXT,
+  grading_policy TEXT,
+  schedule_text TEXT,
+  updated_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS discussions (
+  id TEXT PRIMARY KEY,
+  class_id TEXT REFERENCES classes(id) ON DELETE CASCADE,
+  author_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  pinned BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS discussion_replies (
+  id TEXT PRIMARY KEY,
+  discussion_id TEXT REFERENCES discussions(id) ON DELETE CASCADE,
+  author_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  parent_id TEXT REFERENCES discussion_replies(id) ON DELETE SET NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS course_files (
+  id TEXT PRIMARY KEY,
+  class_id TEXT REFERENCES classes(id) ON DELETE CASCADE,
+  folder TEXT,
+  title TEXT NOT NULL,
+  resource_type TEXT NOT NULL,
+  file_name TEXT,
+  mime_type TEXT,
+  size INT,
+  content_base64 TEXT,
+  link_url TEXT,
+  created_at TIMESTAMPTZ NOT NULL,
+  uploaded_by TEXT REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS inbox_threads (
+  id TEXT PRIMARY KEY,
+  subject TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS inbox_participants (
+  id TEXT PRIMARY KEY,
+  thread_id TEXT REFERENCES inbox_threads(id) ON DELETE CASCADE,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  last_read_at TIMESTAMPTZ,
+  UNIQUE (thread_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS inbox_messages (
+  id TEXT PRIMARY KEY,
+  thread_id TEXT REFERENCES inbox_threads(id) ON DELETE CASCADE,
+  sender_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS assignment_items (
   id TEXT PRIMARY KEY,
   assignment_id TEXT REFERENCES assignments(id) ON DELETE CASCADE,
@@ -386,6 +454,15 @@ CREATE INDEX IF NOT EXISTS notifications_created_idx ON notifications (created_a
 CREATE INDEX IF NOT EXISTS course_modules_class_idx ON course_modules (class_id);
 CREATE INDEX IF NOT EXISTS course_modules_parent_idx ON course_modules (parent_id);
 CREATE INDEX IF NOT EXISTS module_resources_module_idx ON module_resources (module_id);
+CREATE UNIQUE INDEX IF NOT EXISTS course_syllabi_class_idx ON course_syllabi (class_id);
+CREATE INDEX IF NOT EXISTS discussions_class_idx ON discussions (class_id);
+CREATE INDEX IF NOT EXISTS discussions_created_idx ON discussions (created_at);
+CREATE INDEX IF NOT EXISTS discussion_replies_discussion_idx ON discussion_replies (discussion_id);
+CREATE INDEX IF NOT EXISTS course_files_class_idx ON course_files (class_id);
+CREATE INDEX IF NOT EXISTS course_files_created_idx ON course_files (created_at);
+CREATE INDEX IF NOT EXISTS inbox_participants_user_idx ON inbox_participants (user_id);
+CREATE INDEX IF NOT EXISTS inbox_participants_thread_idx ON inbox_participants (thread_id);
+CREATE INDEX IF NOT EXISTS inbox_messages_thread_idx ON inbox_messages (thread_id);
 
 CREATE TABLE IF NOT EXISTS admin_logs (
   id TEXT PRIMARY KEY,
