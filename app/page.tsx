@@ -39,7 +39,6 @@ export default function Home() {
               </div>
             </div>
           </div>
-          </div>
           <div className="note-row">
             <div className="sticky-note">
               <div className="section-title">学习计划</div>
