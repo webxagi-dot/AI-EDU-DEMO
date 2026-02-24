@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/Card";
+import EduIcon from "@/components/EduIcon";
 
 type PlanItem = {
   knowledgePointId: string;
@@ -73,7 +74,15 @@ export default function StudentPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="今日任务">
+      <div className="section-head">
+        <div>
+          <h2>学习控制台</h2>
+          <div className="section-sub">今日任务、成长激励与学习入口。</div>
+        </div>
+        <span className="chip">学期进行中</span>
+      </div>
+
+      <Card title="今日任务" tag="计划">
         {plan.length === 0 ? (
           <p>尚未生成学习计划，请先完成诊断测评。</p>
         ) : (
@@ -93,7 +102,7 @@ export default function StudentPage() {
         </div>
       </Card>
 
-      <Card title="学习激励">
+      <Card title="学习激励" tag="成长">
         <div className="grid grid-2">
           <div className="card">
             <div className="section-title">连续学习</div>
@@ -118,14 +127,28 @@ export default function StudentPage() {
         </div>
       </Card>
 
+      <div className="section-head">
+        <div>
+          <h2>学习入口</h2>
+          <div className="section-sub">诊断、作业、AI 辅导与家校协作。</div>
+        </div>
+      </div>
+
       <div className="grid grid-3">
-        <Card title="诊断测评">
-          <p>定位薄弱点，生成学习计划。</p>
+        <Card title="诊断测评" tag="起步">
+          <div className="feature-card">
+            <EduIcon name="book" />
+            <p>定位薄弱点，生成学习计划。</p>
+          </div>
           <Link className="button secondary" href="/diagnostic" style={{ marginTop: 12 }}>
             开始诊断
           </Link>
         </Card>
-        <Card title="加入班级">
+        <Card title="加入班级" tag="班级">
+          <div className="feature-card">
+            <EduIcon name="board" />
+            <p>输入老师提供的邀请码加入班级。</p>
+          </div>
           <form onSubmit={handleJoinClass} style={{ display: "grid", gap: 10 }}>
             <input
               value={joinCode}
@@ -142,83 +165,113 @@ export default function StudentPage() {
             <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-1)" }}>已有待审核申请。</div>
           ) : null}
         </Card>
-        <Card title="作业中心">
-          <p>查看老师布置的作业进度。</p>
+        <Card title="作业中心" tag="作业">
+          <div className="feature-card">
+            <EduIcon name="pencil" />
+            <p>查看老师布置的作业进度。</p>
+          </div>
           <Link className="button secondary" href="/student/assignments" style={{ marginTop: 12 }}>
             进入作业
           </Link>
         </Card>
-        <Card title="AI 辅导">
-          <p>逐步提示和引导式讲解。</p>
+        <Card title="AI 辅导" tag="智能">
+          <div className="feature-card">
+            <EduIcon name="brain" />
+            <p>逐步提示和引导式讲解。</p>
+          </div>
           <Link className="button secondary" href="/tutor" style={{ marginTop: 12 }}>
             打开辅导
           </Link>
         </Card>
-        <Card title="学习陪练">
-          <p>分步提示 + 卡点追问。</p>
+        <Card title="学习陪练" tag="陪伴">
+          <div className="feature-card">
+            <EduIcon name="board" />
+            <p>分步提示 + 卡点追问。</p>
+          </div>
           <Link className="button secondary" href="/coach" style={{ marginTop: 12 }}>
             进入陪练
           </Link>
         </Card>
-        <Card title="朗读评分">
-          <p>语文/英语朗读跟读评分。</p>
+        <Card title="朗读评分" tag="语感">
+          <div className="feature-card">
+            <EduIcon name="rocket" />
+            <p>语文/英语朗读跟读评分。</p>
+          </div>
           <Link className="button secondary" href="/reading" style={{ marginTop: 12 }}>
             开始朗读
           </Link>
         </Card>
-        <Card title="记忆曲线复习">
-          <p>按遗忘曲线自动安排复习。</p>
+        <Card title="记忆曲线复习" tag="复习">
+          <div className="feature-card">
+            <EduIcon name="chart" />
+            <p>按遗忘曲线自动安排复习。</p>
+          </div>
           <Link className="button secondary" href="/practice?mode=review" style={{ marginTop: 12 }}>
             开始复习
           </Link>
         </Card>
-        <Card title="学习画像">
-          <p>查看能力雷达与掌握度。</p>
+        <Card title="学习画像" tag="数据">
+          <div className="feature-card">
+            <EduIcon name="chart" />
+            <p>查看能力雷达与掌握度。</p>
+          </div>
           <Link className="button secondary" href="/student/portrait" style={{ marginTop: 12 }}>
             查看画像
           </Link>
         </Card>
-        <Card title="写作批改">
-          <p>作文/英语写作结构语法词汇批改。</p>
+        <Card title="写作批改" tag="表达">
+          <div className="feature-card">
+            <EduIcon name="pencil" />
+            <p>作文/英语写作结构语法词汇批改。</p>
+          </div>
           <Link className="button secondary" href="/writing" style={{ marginTop: 12 }}>
             进入批改
           </Link>
         </Card>
-        <Card title="挑战任务">
-          <p>闯关挑战，解锁奖励。</p>
+        <Card title="挑战任务" tag="成长">
+          <div className="feature-card">
+            <EduIcon name="trophy" />
+            <p>闯关挑战，解锁奖励。</p>
+          </div>
           <Link className="button secondary" href="/challenge" style={{ marginTop: 12 }}>
             进入挑战
           </Link>
         </Card>
-        <Card title="错题本">
-          <p>查看错因与复习节奏。</p>
+        <Card title="错题本" tag="提升">
+          <div className="feature-card">
+            <EduIcon name="puzzle" />
+            <p>查看错因与复习节奏。</p>
+          </div>
           <Link className="button secondary" href="/wrong-book" style={{ marginTop: 12 }}>
             进入错题本
           </Link>
         </Card>
-        <Card title="通知中心">
-          <p>查看最新作业与班级通知。</p>
+        <Card title="通知中心" tag="提醒">
+          <div className="feature-card">
+            <EduIcon name="rocket" />
+            <p>查看最新作业与班级通知。</p>
+          </div>
           <Link className="button secondary" href="/notifications" style={{ marginTop: 12 }}>
             查看通知
           </Link>
         </Card>
       </div>
 
-      <Card title="学习报告">
+      <Card title="学习报告" tag="分析">
         <p>查看本周学习进度与薄弱点。</p>
         <Link className="button secondary" href="/report" style={{ marginTop: 12 }}>
           查看报告
         </Link>
       </Card>
 
-      <Card title="成长档案">
+      <Card title="成长档案" tag="成长">
         <p>沉淀学习路径与掌握度变化。</p>
         <Link className="button secondary" href="/student/growth" style={{ marginTop: 12 }}>
           查看档案
         </Link>
       </Card>
 
-      <Card title="学生资料">
+      <Card title="学生资料" tag="设置">
         <p>设置年级、学科与学习目标。</p>
         <Link className="button secondary" href="/student/profile" style={{ marginTop: 12 }}>
           进入设置

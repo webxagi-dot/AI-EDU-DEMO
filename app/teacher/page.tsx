@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/Card";
+import EduIcon from "@/components/EduIcon";
 
 type ClassItem = {
   id: string;
@@ -232,7 +233,15 @@ export default function TeacherPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="教师概览">
+      <div className="section-head">
+        <div>
+          <h2>教师工作台</h2>
+          <div className="section-sub">班级管理、作业发布与 AI 教学工具。</div>
+        </div>
+        <span className="chip">教学进度跟踪</span>
+      </div>
+
+      <Card title="教师概览" tag="数据">
         <div className="grid grid-3">
           <div className="card">
             <div className="section-title">班级数</div>
@@ -251,7 +260,7 @@ export default function TeacherPage() {
         {error ? <div style={{ marginTop: 12, color: "#b42318", fontSize: 13 }}>{error}</div> : null}
       </Card>
 
-      <Card title="作业统计看板">
+      <Card title="作业统计看板" tag="分析">
         <div className="grid grid-3">
           <div className="card">
             <div className="section-title">完成率</div>
@@ -289,14 +298,20 @@ export default function TeacherPage() {
       </Card>
 
       <div className="grid grid-2">
-        <Card title="AI 教学工具">
-          <p>AI 组卷、课堂讲稿、错题讲评脚本、题库纠错。</p>
+        <Card title="AI 教学工具" tag="智能">
+          <div className="feature-card">
+            <EduIcon name="brain" />
+            <p>AI 组卷、课堂讲稿、错题讲评脚本、题库纠错。</p>
+          </div>
           <Link className="button secondary" href="/teacher/ai-tools" style={{ marginTop: 12 }}>
             进入工具
           </Link>
         </Card>
-        <Card title="学情分析">
-          <p>知识点掌握热力图 + 学情报告。</p>
+        <Card title="学情分析" tag="数据">
+          <div className="feature-card">
+            <EduIcon name="chart" />
+            <p>知识点掌握热力图 + 学情报告。</p>
+          </div>
           <Link className="button secondary" href="/teacher/analysis" style={{ marginTop: 12 }}>
             查看分析
           </Link>
