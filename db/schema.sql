@@ -347,6 +347,7 @@ CREATE TABLE IF NOT EXISTS assignment_submissions (
 );
 
 ALTER TABLE assignment_submissions ADD COLUMN IF NOT EXISTS submission_text TEXT;
+ALTER TABLE assignment_rubrics ADD COLUMN IF NOT EXISTS levels JSONB;
 
 CREATE TABLE IF NOT EXISTS assignment_uploads (
   id TEXT PRIMARY KEY,
@@ -396,6 +397,7 @@ CREATE TABLE IF NOT EXISTS assignment_rubrics (
   assignment_id TEXT REFERENCES assignments(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   description TEXT,
+  levels JSONB,
   max_score INT NOT NULL DEFAULT 5,
   weight INT NOT NULL DEFAULT 1,
   created_at TIMESTAMPTZ NOT NULL
@@ -407,6 +409,17 @@ CREATE TABLE IF NOT EXISTS assignment_review_rubrics (
   rubric_id TEXT REFERENCES assignment_rubrics(id) ON DELETE CASCADE,
   score INT NOT NULL,
   comment TEXT
+);
+
+CREATE TABLE IF NOT EXISTS notification_rules (
+  id TEXT PRIMARY KEY,
+  class_id TEXT UNIQUE REFERENCES classes(id) ON DELETE CASCADE,
+  enabled BOOLEAN NOT NULL DEFAULT true,
+  due_days INT NOT NULL DEFAULT 2,
+  overdue_days INT NOT NULL DEFAULT 0,
+  include_parents BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS announcements (
@@ -447,6 +460,7 @@ CREATE INDEX IF NOT EXISTS assignment_review_items_review_idx ON assignment_revi
 CREATE INDEX IF NOT EXISTS assignment_rubrics_assignment_idx ON assignment_rubrics (assignment_id);
 CREATE INDEX IF NOT EXISTS assignment_review_rubrics_review_idx ON assignment_review_rubrics (review_id);
 CREATE INDEX IF NOT EXISTS assignment_review_rubrics_rubric_idx ON assignment_review_rubrics (rubric_id);
+CREATE UNIQUE INDEX IF NOT EXISTS notification_rules_class_idx ON notification_rules (class_id);
 CREATE INDEX IF NOT EXISTS announcements_class_idx ON announcements (class_id);
 CREATE INDEX IF NOT EXISTS announcements_created_idx ON announcements (created_at);
 CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id);

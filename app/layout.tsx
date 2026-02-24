@@ -15,6 +15,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     Array<{ href: string; label: string }>
   > = {
     student: [
+      { href: "/dashboard", label: "学习看板" },
       { href: "/student", label: "学生端" },
       { href: "/course", label: "课程主页" },
       { href: "/student/assignments", label: "作业中心" },
@@ -38,12 +39,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       { href: "/notifications", label: "通知中心" }
     ],
     teacher: [
+      { href: "/dashboard", label: "教学看板" },
       { href: "/teacher", label: "教师端" },
       { href: "/course", label: "课程主页" },
       { href: "/teacher/gradebook", label: "成绩册" },
       { href: "/teacher/modules", label: "课程模块" },
       { href: "/teacher/analysis", label: "学情分析" },
       { href: "/teacher/ai-tools", label: "教师 AI 工具" },
+      { href: "/teacher/submissions", label: "提交箱" },
+      { href: "/teacher/notifications", label: "通知规则" },
       { href: "/discussions", label: "讨论区" },
       { href: "/files", label: "文件中心" },
       { href: "/inbox", label: "收件箱" },
@@ -51,6 +55,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       { href: "/announcements", label: "班级公告" }
     ],
     parent: [
+      { href: "/dashboard", label: "家长看板" },
       { href: "/parent", label: "家长端" },
       { href: "/course", label: "课程主页" },
       { href: "/discussions", label: "讨论区" },

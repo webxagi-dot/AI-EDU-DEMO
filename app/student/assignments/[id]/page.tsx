@@ -407,6 +407,11 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
                   {rubric.description ? (
                     <div style={{ fontSize: 12, color: "var(--ink-1)" }}>{rubric.description}</div>
                   ) : null}
+                  {rubric.levels?.length ? (
+                    <div style={{ marginTop: 6, fontSize: 12, color: "var(--ink-1)" }}>
+                      评分档：{rubric.levels.map((level: any) => `${level.label}(${level.score})`).join(" / ")}
+                    </div>
+                  ) : null}
                   <div className="pill-list" style={{ marginTop: 8 }}>
                     <span className="pill">
                       得分 {record?.score ?? 0}/{rubric.maxScore}

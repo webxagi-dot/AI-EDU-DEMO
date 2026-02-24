@@ -32,7 +32,14 @@ type ReviewPayload = {
   }>;
   review: { overallComment?: string } | null;
   reviewItems: Array<{ questionId: string; wrongTag?: string; comment?: string }>;
-  rubrics: Array<{ id: string; title: string; description?: string; maxScore: number; weight: number }>;
+  rubrics: Array<{
+    id: string;
+    title: string;
+    description?: string;
+    levels?: Array<{ label: string; score: number; description: string }>;
+    maxScore: number;
+    weight: number;
+  }>;
   reviewRubrics: Array<{ rubricId: string; score: number; comment?: string }>;
 };
 
@@ -413,6 +420,24 @@ export default function TeacherAssignmentReviewPage({
                   <div className="section-title">{rubric.title}</div>
                   {rubric.description ? (
                     <div style={{ fontSize: 12, color: "var(--ink-1)" }}>{rubric.description}</div>
+                  ) : null}
+                  <div style={{ fontSize: 12, color: "var(--ink-1)", marginTop: 4 }}>
+                    权重 {rubric.weight} · 满分 {rubric.maxScore}
+                  </div>
+                  {rubric.levels?.length ? (
+                    <div style={{ marginTop: 8 }}>
+                      <div className="section-sub">分档参考</div>
+                      <div className="grid" style={{ gap: 6, marginTop: 6 }}>
+                        {rubric.levels.map((level, index) => (
+                          <div key={`${rubric.id}-level-${index}`} className="card">
+                            <div className="section-title">
+                              {level.label}（{level.score}）
+                            </div>
+                            <div style={{ fontSize: 12, color: "var(--ink-1)" }}>{level.description}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   ) : null}
                   <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
                     <label>

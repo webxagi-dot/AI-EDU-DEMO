@@ -36,6 +36,15 @@ type AssignmentDetail = {
   }>;
 };
 
+type RubricLevel = { label: string; score: number; description: string };
+type RubricItem = {
+  title: string;
+  description?: string;
+  maxScore: number;
+  weight: number;
+  levels: RubricLevel[];
+};
+
 export default function TeacherAssignmentDetailPage({ params }: { params: { id: string } }) {
   const [data, setData] = useState<AssignmentDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +53,10 @@ export default function TeacherAssignmentDetailPage({ params }: { params: { id: 
   const [notifyMessage, setNotifyMessage] = useState("");
   const [notifyLoading, setNotifyLoading] = useState(false);
   const [notifyResult, setNotifyResult] = useState<string | null>(null);
+  const [rubrics, setRubrics] = useState<RubricItem[]>([]);
+  const [rubricMessage, setRubricMessage] = useState<string | null>(null);
+  const [rubricError, setRubricError] = useState<string | null>(null);
+  const [rubricSaving, setRubricSaving] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -56,9 +69,34 @@ export default function TeacherAssignmentDetailPage({ params }: { params: { id: 
     setData(payload);
   }, [params.id]);
 
+  const loadRubrics = useCallback(async () => {
+    const res = await fetch(`/api/teacher/assignments/${params.id}/rubrics`);
+    const payload = await res.json();
+    if (res.ok) {
+      const items: RubricItem[] = (payload.data ?? []).map((item: any) => ({
+        title: item.title ?? "",
+        description: item.description ?? "",
+        maxScore: Number(item.maxScore ?? 5),
+        weight: Number(item.weight ?? 1),
+        levels: Array.isArray(item.levels)
+          ? item.levels.map((level: any) => ({
+              label: level.label ?? "",
+              score: Number(level.score ?? 0),
+              description: level.description ?? ""
+            }))
+          : []
+      }));
+      setRubrics(items);
+    }
+  }, [params.id]);
+
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    loadRubrics();
+  }, [loadRubrics]);
 
   if (error) {
     return (
@@ -76,6 +114,64 @@ export default function TeacherAssignmentDetailPage({ params }: { params: { id: 
   }
 
   const completedCount = data.students.filter((item) => item.status === "completed").length;
+
+  function updateRubric(index: number, patch: Partial<RubricItem>) {
+    setRubrics((prev) => prev.map((item, idx) => (idx === index ? { ...item, ...patch } : item)));
+  }
+
+  function updateLevel(rubricIndex: number, levelIndex: number, patch: Partial<RubricLevel>) {
+    setRubrics((prev) =>
+      prev.map((item, idx) => {
+        if (idx !== rubricIndex) return item;
+        const levels = item.levels.map((level, lidx) =>
+          lidx === levelIndex ? { ...level, ...patch } : level
+        );
+        return { ...item, levels };
+      })
+    );
+  }
+
+  function addRubric() {
+    setRubrics((prev) => [
+      ...prev,
+      {
+        title: "评分维度",
+        description: "",
+        maxScore: 10,
+        weight: 1,
+        levels: [
+          { label: "优秀", score: 10, description: "表现优秀" },
+          { label: "良好", score: 8, description: "表现良好" },
+          { label: "需改进", score: 6, description: "需要改进" }
+        ]
+      }
+    ]);
+  }
+
+  function removeRubric(index: number) {
+    setRubrics((prev) => prev.filter((_, idx) => idx !== index));
+  }
+
+  function addLevel(index: number) {
+    setRubrics((prev) =>
+      prev.map((item, idx) =>
+        idx === index
+          ? {
+              ...item,
+              levels: [...item.levels, { label: "分档", score: item.maxScore, description: "" }]
+            }
+          : item
+      )
+    );
+  }
+
+  function removeLevel(rubricIndex: number, levelIndex: number) {
+    setRubrics((prev) =>
+      prev.map((item, idx) =>
+        idx === rubricIndex ? { ...item, levels: item.levels.filter((_, lidx) => lidx !== levelIndex) } : item
+      )
+    );
+  }
 
   return (
     <div className="grid" style={{ gap: 18 }}>
@@ -126,6 +222,160 @@ export default function TeacherAssignmentDetailPage({ params }: { params: { id: 
           <Link className="button secondary" href={`/teacher/assignments/${data.assignment.id}/stats`}>
             查看统计
           </Link>
+        </div>
+      </Card>
+
+      <Card title="评分细则（Rubric）" tag="评分">
+        <div className="feature-card">
+          <EduIcon name="chart" />
+          <p>设置评分维度、权重与分档描述，学生端可查看评分细则。</p>
+        </div>
+        <div className="grid" style={{ gap: 12, marginTop: 12 }}>
+          {rubrics.map((rubric, index) => (
+            <div className="card" key={`rubric-${index}`}>
+              <div className="card-header">
+                <div className="section-title">维度 {index + 1}</div>
+                <button className="button ghost" type="button" onClick={() => removeRubric(index)}>
+                  删除维度
+                </button>
+              </div>
+              <div className="grid" style={{ gap: 10 }}>
+                <label>
+                  <div className="section-title">维度名称</div>
+                  <input
+                    value={rubric.title}
+                    onChange={(event) => updateRubric(index, { title: event.target.value })}
+                    style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+                  />
+                </label>
+                <label>
+                  <div className="section-title">维度说明</div>
+                  <input
+                    value={rubric.description ?? ""}
+                    onChange={(event) => updateRubric(index, { description: event.target.value })}
+                    style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+                  />
+                </label>
+                <div className="grid grid-2">
+                  <label>
+                    <div className="section-title">满分</div>
+                    <input
+                      type="number"
+                      min={1}
+                      value={rubric.maxScore}
+                      onChange={(event) => updateRubric(index, { maxScore: Number(event.target.value) })}
+                      style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+                    />
+                  </label>
+                  <label>
+                    <div className="section-title">权重</div>
+                    <input
+                      type="number"
+                      min={1}
+                      value={rubric.weight}
+                      onChange={(event) => updateRubric(index, { weight: Number(event.target.value) })}
+                      style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+                    />
+                  </label>
+                </div>
+                <div>
+                  <div className="section-title">分档描述</div>
+                  <div className="grid" style={{ gap: 8, marginTop: 8 }}>
+                    {rubric.levels.map((level, levelIndex) => (
+                      <div className="card" key={`level-${index}-${levelIndex}`}>
+                        <div className="grid grid-2">
+                          <label>
+                            <div className="section-title">档位名称</div>
+                            <input
+                              value={level.label}
+                              onChange={(event) =>
+                                updateLevel(index, levelIndex, { label: event.target.value })
+                              }
+                              style={{ width: "100%", padding: 8, borderRadius: 10, border: "1px solid var(--stroke)" }}
+                            />
+                          </label>
+                          <label>
+                            <div className="section-title">建议得分</div>
+                            <input
+                              type="number"
+                              min={0}
+                              value={level.score}
+                              onChange={(event) =>
+                                updateLevel(index, levelIndex, { score: Number(event.target.value) })
+                              }
+                              style={{ width: "100%", padding: 8, borderRadius: 10, border: "1px solid var(--stroke)" }}
+                            />
+                          </label>
+                        </div>
+                        <label>
+                          <div className="section-title">描述</div>
+                          <input
+                            value={level.description}
+                            onChange={(event) =>
+                              updateLevel(index, levelIndex, { description: event.target.value })
+                            }
+                            style={{ width: "100%", padding: 8, borderRadius: 10, border: "1px solid var(--stroke)" }}
+                          />
+                        </label>
+                        <button className="button ghost" type="button" onClick={() => removeLevel(index, levelIndex)}>
+                          删除档位
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button className="button secondary" type="button" onClick={() => addLevel(index)}>
+                    添加分档
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        {rubricError ? <div style={{ marginTop: 8, color: "#b42318", fontSize: 13 }}>{rubricError}</div> : null}
+        {rubricMessage ? <div style={{ marginTop: 8, color: "#027a48", fontSize: 13 }}>{rubricMessage}</div> : null}
+        <div className="cta-row" style={{ marginTop: 12 }}>
+          <button className="button secondary" type="button" onClick={addRubric}>
+            添加评分维度
+          </button>
+          <button
+            className="button primary"
+            type="button"
+            disabled={rubricSaving}
+            onClick={async () => {
+              setRubricSaving(true);
+              setRubricMessage(null);
+              setRubricError(null);
+              const res = await fetch(`/api/teacher/assignments/${data.assignment.id}/rubrics`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ items: rubrics })
+              });
+              const payload = await res.json();
+              if (!res.ok) {
+                setRubricError(payload?.error ?? "保存失败");
+              } else {
+                setRubricMessage("评分细则已保存");
+                setRubrics(
+                  (payload.data ?? []).map((item: any) => ({
+                    title: item.title ?? "",
+                    description: item.description ?? "",
+                    maxScore: Number(item.maxScore ?? 5),
+                    weight: Number(item.weight ?? 1),
+                    levels: Array.isArray(item.levels)
+                      ? item.levels.map((level: any) => ({
+                          label: level.label ?? "",
+                          score: Number(level.score ?? 0),
+                          description: level.description ?? ""
+                        }))
+                      : []
+                  }))
+                );
+              }
+              setRubricSaving(false);
+            }}
+          >
+            {rubricSaving ? "保存中..." : "保存评分细则"}
+          </button>
         </div>
       </Card>
 

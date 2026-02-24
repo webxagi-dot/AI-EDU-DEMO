@@ -27,6 +27,10 @@ export default function TeacherGradebookPage() {
   const [classId, setClassId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<"student" | "assignment">("student");
+  const [studentKeyword, setStudentKeyword] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [assignmentFilter, setAssignmentFilter] = useState("all");
 
   async function load(nextClassId?: string) {
     setLoading(true);
@@ -55,7 +59,10 @@ export default function TeacherGradebookPage() {
     () => new Map((assignmentStats ?? []).map((item) => [item.assignmentId, item])),
     [assignmentStats]
   );
-  const visibleAssignments = assignments.slice(0, 6);
+  const visibleAssignments =
+    assignmentFilter !== "all"
+      ? assignments.filter((item) => item.id === assignmentFilter)
+      : assignments.slice(0, 6);
   const now = Date.now();
   const ranked = useMemo(() => {
     if (!data?.students?.length) return new Map<string, number>();
@@ -68,6 +75,31 @@ export default function TeacherGradebookPage() {
     if (avgScore >= 70) return "B";
     return "C";
   }
+
+  const filteredStudents = useMemo(() => {
+    if (!data?.students?.length) return [];
+    const keyword = studentKeyword.trim().toLowerCase();
+    let list = data.students;
+    if (keyword) {
+      list = list.filter(
+        (student) =>
+          student.name.toLowerCase().includes(keyword) || student.email.toLowerCase().includes(keyword)
+      );
+    }
+    if (statusFilter === "overdue") {
+      list = list.filter((student) => student.stats.overdue > 0);
+    } else if (statusFilter === "pending") {
+      list = list.filter((student) => student.stats.pending > 0);
+    } else if (statusFilter === "completed") {
+      list = list.filter((student) => student.stats.pending === 0);
+    }
+    return list;
+  }, [data, studentKeyword, statusFilter]);
+
+  const trendMap = useMemo(
+    () => new Map((data?.trend ?? []).map((item) => [item.assignmentId, item])),
+    [data?.trend]
+  );
 
   function exportCSV() {
     if (!data) return;
@@ -163,6 +195,56 @@ export default function TeacherGradebookPage() {
             </div>
           </div>
         </div>
+        <div className="grid grid-2" style={{ marginTop: 12 }}>
+          <label>
+            <div className="section-title">视图</div>
+            <select
+              value={viewMode}
+              onChange={(event) => setViewMode(event.target.value as "student" | "assignment")}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            >
+              <option value="student">按学生</option>
+              <option value="assignment">按作业</option>
+            </select>
+          </label>
+          <label>
+            <div className="section-title">作业筛选</div>
+            <select
+              value={assignmentFilter}
+              onChange={(event) => setAssignmentFilter(event.target.value)}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            >
+              <option value="all">全部作业</option>
+              {assignments.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <div className="section-title">学生筛选</div>
+            <input
+              value={studentKeyword}
+              onChange={(event) => setStudentKeyword(event.target.value)}
+              placeholder="姓名/邮箱"
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            />
+          </label>
+          <label>
+            <div className="section-title">状态筛选</div>
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            >
+              <option value="all">全部</option>
+              <option value="pending">有待交</option>
+              <option value="overdue">有逾期</option>
+              <option value="completed">全部完成</option>
+            </select>
+          </label>
+        </div>
         {error ? <div style={{ marginTop: 10, color: "#b42318", fontSize: 13 }}>{error}</div> : null}
       </Card>
 
@@ -186,7 +268,9 @@ export default function TeacherGradebookPage() {
           </div>
         </div>
         <div style={{ marginTop: 10, fontSize: 12, color: "var(--ink-1)" }}>
-          当前仅展示最近 {visibleAssignments.length} 份作业。更多作业可在“作业列表”查看。
+          {assignmentFilter !== "all"
+            ? "已筛选 1 份作业。"
+            : `当前仅展示最近 ${visibleAssignments.length} 份作业。更多作业可在“作业列表”查看。`}
         </div>
         <div className="cta-row" style={{ marginTop: 12 }}>
           <button className="button secondary" type="button" onClick={exportCSV}>
@@ -334,7 +418,7 @@ export default function TeacherGradebookPage() {
       <Card title="成绩册" tag="作业">
         {loading ? (
           <p>加载中...</p>
-        ) : data?.students?.length ? (
+        ) : viewMode === "student" && filteredStudents.length ? (
           <div style={{ overflowX: "auto" }}>
             <table className="gradebook-table">
               <thead>
@@ -367,7 +451,7 @@ export default function TeacherGradebookPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.students.map((student) => (
+                {filteredStudents.map((student) => (
                   <tr key={student.id}>
                     <td>
                       <div className="section-title">{student.name}</div>
@@ -407,6 +491,44 @@ export default function TeacherGradebookPage() {
                     })}
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        ) : viewMode === "assignment" && data?.assignments?.length ? (
+          <div style={{ overflowX: "auto" }}>
+            <table className="gradebook-table">
+              <thead>
+                <tr>
+                  <th>作业</th>
+                  <th>截止日期</th>
+                  <th>类型</th>
+                  <th>完成率</th>
+                  <th>平均分</th>
+                  <th>逾期</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(assignmentFilter === "all" ? data.assignments : data.assignments.filter((item) => item.id === assignmentFilter)).map(
+                  (assignment) => {
+                    const stat = assignmentStatMap.get(assignment.id);
+                    const trend = trendMap.get(assignment.id);
+                    return (
+                      <tr key={assignment.id}>
+                        <td>
+                          <div className="section-title">{assignment.title}</div>
+                          <div className="gradebook-sub">
+                            已交 {stat?.completed ?? 0}/{stat?.total ?? 0}
+                          </div>
+                        </td>
+                        <td>{new Date(assignment.dueDate).toLocaleDateString("zh-CN")}</td>
+                        <td>{ASSIGNMENT_TYPE_LABELS[assignment.submissionType ?? "quiz"]}</td>
+                        <td>{trend?.completionRate ?? 0}%</td>
+                        <td>{trend?.avgScore ?? 0}</td>
+                        <td>{stat?.overdue ?? 0}</td>
+                      </tr>
+                    );
+                  }
+                )}
               </tbody>
             </table>
           </div>
