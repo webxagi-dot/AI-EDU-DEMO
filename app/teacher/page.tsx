@@ -65,7 +65,10 @@ export default function TeacherPage() {
     knowledgePointId: "",
     mode: "bank",
     difficulty: "medium",
-    questionType: "choice"
+    questionType: "choice",
+    submissionType: "quiz",
+    maxUploads: 3,
+    gradingFocus: ""
   });
 
   const filteredPoints = useMemo(() => {
@@ -188,7 +191,10 @@ export default function TeacherPage() {
         knowledgePointId: assignmentForm.knowledgePointId || undefined,
         mode: assignmentForm.mode,
         difficulty: assignmentForm.difficulty,
-        questionType: assignmentForm.questionType
+        questionType: assignmentForm.questionType,
+        submissionType: assignmentForm.submissionType,
+        maxUploads: assignmentForm.maxUploads,
+        gradingFocus: assignmentForm.gradingFocus
       })
     });
     const data = await res.json();
@@ -198,7 +204,7 @@ export default function TeacherPage() {
       return;
     }
     setMessage("作业发布成功。");
-    setAssignmentForm((prev) => ({ ...prev, title: "", description: "" }));
+    setAssignmentForm((prev) => ({ ...prev, title: "", description: "", gradingFocus: "" }));
     await loadAll();
     setLoading(false);
   }
@@ -440,6 +446,22 @@ export default function TeacherPage() {
               />
             </label>
             <label>
+              <div className="section-title">作业类型</div>
+              <select
+                value={assignmentForm.submissionType}
+                onChange={(event) =>
+                  setAssignmentForm((prev) => ({ ...prev, submissionType: event.target.value }))
+                }
+                style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+              >
+                <option value="quiz">在线题目</option>
+                <option value="upload">上传作业</option>
+              </select>
+            </label>
+          </div>
+
+          {assignmentForm.submissionType === "quiz" ? (
+            <label>
               <div className="section-title">题目数量</div>
               <input
                 type="number"
@@ -452,64 +474,94 @@ export default function TeacherPage() {
                 style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
               />
             </label>
-          </div>
-          <div className="grid grid-2">
+          ) : (
             <label>
-              <div className="section-title">出题方式</div>
-              <select
-                value={assignmentForm.mode}
-                onChange={(event) => setAssignmentForm((prev) => ({ ...prev, mode: event.target.value }))}
+              <div className="section-title">最多上传</div>
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={assignmentForm.maxUploads}
+                onChange={(event) =>
+                  setAssignmentForm((prev) => ({ ...prev, maxUploads: Number(event.target.value) }))
+                }
                 style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
-              >
-                <option value="bank">题库抽题</option>
-                <option value="ai">AI 生成</option>
-              </select>
+              />
             </label>
+          )}
+          {assignmentForm.submissionType === "quiz" ? (
+            <>
+              <div className="grid grid-2">
+                <label>
+                  <div className="section-title">出题方式</div>
+                  <select
+                    value={assignmentForm.mode}
+                    onChange={(event) => setAssignmentForm((prev) => ({ ...prev, mode: event.target.value }))}
+                    style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+                  >
+                    <option value="bank">题库抽题</option>
+                    <option value="ai">AI 生成</option>
+                  </select>
+                </label>
+                <label>
+                  <div className="section-title">难度</div>
+                  <select
+                    value={assignmentForm.difficulty}
+                    onChange={(event) => setAssignmentForm((prev) => ({ ...prev, difficulty: event.target.value }))}
+                    style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+                  >
+                    <option value="easy">简单</option>
+                    <option value="medium">中等</option>
+                    <option value="hard">较难</option>
+                  </select>
+                </label>
+              </div>
+              <label>
+                <div className="section-title">题型</div>
+                <select
+                  value={assignmentForm.questionType}
+                  onChange={(event) => setAssignmentForm((prev) => ({ ...prev, questionType: event.target.value }))}
+                  style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+                >
+                  <option value="choice">选择题</option>
+                  <option value="application">应用题</option>
+                  <option value="calculation">计算题</option>
+                </select>
+              </label>
+              <label>
+                <div className="section-title">限定知识点（可选）</div>
+                <select
+                  value={assignmentForm.knowledgePointId}
+                  onChange={(event) => setAssignmentForm((prev) => ({ ...prev, knowledgePointId: event.target.value }))}
+                  style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+                >
+                  <option value="">不限</option>
+                  {filteredPoints.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.unit ? `${item.unit} / ` : ""}
+                      {item.chapter} · {item.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {assignmentForm.mode === "ai" ? (
+                <div style={{ fontSize: 12, color: "var(--ink-1)" }}>
+                  AI 生成会写入题库。建议选择知识点并确认已配置 LLM。
+                </div>
+              ) : null}
+            </>
+          ) : null}
+          {assignmentForm.submissionType === "upload" ? (
             <label>
-              <div className="section-title">难度</div>
-              <select
-                value={assignmentForm.difficulty}
-                onChange={(event) => setAssignmentForm((prev) => ({ ...prev, difficulty: event.target.value }))}
+              <div className="section-title">批改重点（可选）</div>
+              <textarea
+                value={assignmentForm.gradingFocus}
+                onChange={(event) => setAssignmentForm((prev) => ({ ...prev, gradingFocus: event.target.value }))}
+                placeholder="例如：重视列式步骤、书写规范与验算。"
+                rows={3}
                 style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
-              >
-                <option value="easy">简单</option>
-                <option value="medium">中等</option>
-                <option value="hard">较难</option>
-              </select>
+              />
             </label>
-          </div>
-          <label>
-            <div className="section-title">题型</div>
-            <select
-              value={assignmentForm.questionType}
-              onChange={(event) => setAssignmentForm((prev) => ({ ...prev, questionType: event.target.value }))}
-              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
-            >
-              <option value="choice">选择题</option>
-              <option value="application">应用题</option>
-              <option value="calculation">计算题</option>
-            </select>
-          </label>
-          <label>
-            <div className="section-title">限定知识点（可选）</div>
-            <select
-              value={assignmentForm.knowledgePointId}
-              onChange={(event) => setAssignmentForm((prev) => ({ ...prev, knowledgePointId: event.target.value }))}
-              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
-            >
-              <option value="">不限</option>
-              {filteredPoints.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.unit ? `${item.unit} / ` : ""}
-                  {item.chapter} · {item.title}
-                </option>
-              ))}
-            </select>
-          </label>
-          {assignmentForm.mode === "ai" ? (
-            <div style={{ fontSize: 12, color: "var(--ink-1)" }}>
-              AI 生成会写入题库。建议选择知识点并确认已配置 LLM。
-            </div>
           ) : null}
           <button className="button primary" type="submit" disabled={loading}>
             {loading ? "提交中..." : "发布作业"}

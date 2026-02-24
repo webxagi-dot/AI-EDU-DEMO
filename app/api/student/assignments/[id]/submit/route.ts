@@ -10,6 +10,7 @@ import {
 } from "@/lib/assignments";
 import { getQuestions } from "@/lib/content";
 import { addAttempt } from "@/lib/progress";
+import { getAssignmentUploads } from "@/lib/assignment-uploads";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export async function POST(request: Request, context: { params: { id: string } }
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
 
-  const body = (await request.json()) as { answers?: Record<string, string> };
+  const body = (await request.json()) as { answers?: Record<string, string>; submissionText?: string };
   const answers = body.answers ?? {};
 
   const items = await getAssignmentItems(assignment.id);
@@ -47,36 +48,45 @@ export async function POST(request: Request, context: { params: { id: string } }
     explanation: string;
   }>;
 
-  for (const item of items) {
-    const question = questionMap.get(item.questionId);
-    if (!question) {
-      continue;
+  const isUpload = assignment.submissionType === "upload";
+  if (isUpload) {
+    const uploads = await getAssignmentUploads(assignment.id, user.id);
+    if (!uploads.length) {
+      return NextResponse.json({ error: "请先上传作业文件" }, { status: 400 });
     }
-    const answer = answers[question.id] ?? "";
-    const correct = answer === question.answer;
-    if (correct) score += 1;
+  }
+  if (!isUpload) {
+    for (const item of items) {
+      const question = questionMap.get(item.questionId);
+      if (!question) {
+        continue;
+      }
+      const answer = answers[question.id] ?? "";
+      const correct = answer === question.answer;
+      if (correct) score += 1;
 
-    await addAttempt({
-      id: crypto.randomBytes(10).toString("hex"),
-      userId: user.id,
-      questionId: question.id,
-      subject: question.subject,
-      knowledgePointId: question.knowledgePointId,
-      correct,
-      answer,
-      createdAt: new Date().toISOString()
-    });
+      await addAttempt({
+        id: crypto.randomBytes(10).toString("hex"),
+        userId: user.id,
+        questionId: question.id,
+        subject: question.subject,
+        knowledgePointId: question.knowledgePointId,
+        correct,
+        answer,
+        createdAt: new Date().toISOString()
+      });
 
-    details.push({
-      questionId: question.id,
-      correct,
-      answer,
-      correctAnswer: question.answer,
-      explanation: question.explanation
-    });
+      details.push({
+        questionId: question.id,
+        correct,
+        answer,
+        correctAnswer: question.answer,
+        explanation: question.explanation
+      });
+    }
   }
 
-  const total = items.length;
+  const total = isUpload ? 0 : items.length;
   await completeAssignmentProgress({
     assignmentId: assignment.id,
     studentId: user.id,
@@ -87,10 +97,11 @@ export async function POST(request: Request, context: { params: { id: string } }
   await upsertAssignmentSubmission({
     assignmentId: assignment.id,
     studentId: user.id,
-    answers,
+    answers: isUpload ? {} : answers,
     score,
-    total
+    total,
+    submissionText: body.submissionText
   });
 
-  return NextResponse.json({ score, total, details });
+  return NextResponse.json({ score, total, details, submissionText: body.submissionText });
 }

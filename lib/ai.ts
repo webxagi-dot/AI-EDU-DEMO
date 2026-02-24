@@ -82,6 +82,16 @@ export type ExplainVariants = {
   provider: string;
 };
 
+export type HomeworkReview = {
+  score: number;
+  summary: string;
+  strengths: string[];
+  issues: string[];
+  suggestions: string[];
+  rubric: { item: string; score: number; comment: string }[];
+  provider: string;
+};
+
 export type LearningReport = {
   report: string;
   highlights: string[];
@@ -118,7 +128,7 @@ const SYSTEM_PROMPT =
 const GENERATE_PROMPT =
   "你是小学人教版出题老师。只输出严格 JSON，不要附加解释或代码块。";
 
-type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
+type ChatMessage = { role: "system" | "user" | "assistant"; content: string | any[] };
 
 async function callCustomLLM(prompt: string) {
   const endpoint = process.env.LLM_ENDPOINT;
@@ -429,6 +439,134 @@ export async function generateExplainVariants(payload: {
   const analogy = String((parsed as any).analogy ?? "").trim();
   if (!textExplain || !visual || !analogy) return buildExplainFallback(payload);
   return { text: textExplain, visual, analogy, provider };
+}
+
+function buildHomeworkFallback(payload: {
+  subject: string;
+  grade: string;
+  focus?: string;
+  uploadCount: number;
+}) {
+  const base = payload.focus?.trim() || "作业完成情况与解题思路";
+  const summary = `已收到 ${payload.uploadCount} 份作业材料。请重点关注：${base}。`;
+  return {
+    score: 80,
+    summary,
+    strengths: ["步骤较完整", "书写较清晰"],
+    issues: ["个别步骤缺少解释", "部分题目缺少验算"],
+    suggestions: ["补充关键步骤说明", "完成后进行自检或验算"],
+    rubric: [
+      { item: "解题步骤", score: 80, comment: "步骤基本完整，可再细化关键环节。" },
+      { item: "结果准确性", score: 78, comment: "个别题需复核结果。" },
+      { item: "书写规范", score: 85, comment: "整体书写清晰。" }
+    ],
+    provider: "rule"
+  };
+}
+
+export async function generateHomeworkReview(payload: {
+  subject: string;
+  grade: string;
+  assignmentTitle: string;
+  assignmentDescription?: string;
+  focus?: string;
+  studentNote?: string;
+  images: Array<{ mimeType: string; base64: string; fileName: string }>;
+}) {
+  const provider = process.env.LLM_PROVIDER ?? "mock";
+  if (provider === "mock") {
+    return buildHomeworkFallback({
+      subject: payload.subject,
+      grade: payload.grade,
+      focus: payload.focus,
+      uploadCount: payload.images.length
+    });
+  }
+
+  const context = [
+    `学科：${payload.subject}`,
+    `年级：${payload.grade}`,
+    `作业标题：${payload.assignmentTitle}`,
+    payload.assignmentDescription ? `作业说明：${payload.assignmentDescription}` : "",
+    payload.focus ? `批改重点：${payload.focus}` : "",
+    payload.studentNote ? `学生备注：${payload.studentNote}` : ""
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const userText = `${context}\n请对作业进行批改，输出 JSON：{\"score\":80,\"summary\":\"...\",\"strengths\":[\"...\"],\"issues\":[\"...\"],\"suggestions\":[\"...\"],\"rubric\":[{\"item\":\"...\",\"score\":80,\"comment\":\"...\"}]}` +
+    "。不要输出多余文本。";
+
+  const visionModel = process.env.LLM_VISION_MODEL ?? process.env.LLM_MODEL ?? "glm-4.7";
+  const content: any[] = [{ type: "text", text: userText }];
+  payload.images.slice(0, 4).forEach((img) => {
+    content.push({ type: "image_url", image_url: { url: `data:${img.mimeType};base64,${img.base64}` } });
+  });
+
+  let text: string | null = null;
+  if (provider === "zhipu" || provider === "compatible") {
+    text = await callChatCompletions({
+      baseUrl: process.env.LLM_BASE_URL ?? "https://open.bigmodel.cn/api/paas/v4",
+      apiKey: process.env.LLM_API_KEY ?? "",
+      model: visionModel,
+      messages: [
+        { role: "system", content: "你是老师，擅长批改作业。请给出可执行的点评与评分。" },
+        { role: "user", content }
+      ],
+      temperature: 0.3
+    });
+  } else if (provider === "custom") {
+    text = await callCustomLLM(userText);
+  }
+
+  if (!text) {
+    return buildHomeworkFallback({
+      subject: payload.subject,
+      grade: payload.grade,
+      focus: payload.focus,
+      uploadCount: payload.images.length
+    });
+  }
+
+  const parsed = extractJson(text);
+  if (!parsed || typeof parsed !== "object") {
+    return buildHomeworkFallback({
+      subject: payload.subject,
+      grade: payload.grade,
+      focus: payload.focus,
+      uploadCount: payload.images.length
+    });
+  }
+
+  const score = Math.max(0, Math.min(100, Math.round(Number((parsed as any).score ?? 0))));
+  const summary = String((parsed as any).summary ?? "").trim();
+  const strengths = Array.isArray((parsed as any).strengths)
+    ? (parsed as any).strengths.map((item: any) => String(item).trim()).filter(Boolean)
+    : [];
+  const issues = Array.isArray((parsed as any).issues)
+    ? (parsed as any).issues.map((item: any) => String(item).trim()).filter(Boolean)
+    : [];
+  const suggestions = Array.isArray((parsed as any).suggestions)
+    ? (parsed as any).suggestions.map((item: any) => String(item).trim()).filter(Boolean)
+    : [];
+  const rubricRaw = Array.isArray((parsed as any).rubric) ? (parsed as any).rubric : [];
+  const rubric = rubricRaw
+    .map((item: any) => ({
+      item: String(item.item ?? "").trim(),
+      score: Math.max(0, Math.min(100, Math.round(Number(item.score ?? 0)))),
+      comment: String(item.comment ?? "").trim()
+    }))
+    .filter((item: any) => item.item);
+
+  return {
+    score: score || 80,
+    summary: summary || "已完成批改。",
+    strengths: strengths.slice(0, 5),
+    issues: issues.slice(0, 5),
+    suggestions: suggestions.slice(0, 5),
+    rubric: rubric.slice(0, 5),
+    provider
+  };
 }
 
 export async function generateWritingFeedback(payload: {

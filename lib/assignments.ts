@@ -10,6 +10,9 @@ export type Assignment = {
   description?: string;
   dueDate: string;
   createdAt: string;
+  submissionType?: "quiz" | "upload";
+  maxUploads?: number;
+  gradingFocus?: string;
 };
 
 export type AssignmentItem = {
@@ -36,6 +39,7 @@ export type AssignmentSubmission = {
   score: number;
   total: number;
   submittedAt: string;
+  submissionText?: string;
 };
 
 const ASSIGNMENT_FILE = "assignments.json";
@@ -50,6 +54,9 @@ type DbAssignment = {
   description: string | null;
   due_date: string;
   created_at: string;
+  submission_type: string | null;
+  max_uploads: number | null;
+  grading_focus: string | null;
 };
 
 type DbAssignmentItem = {
@@ -76,6 +83,7 @@ type DbAssignmentSubmission = {
   score: number;
   total: number;
   submitted_at: string;
+  submission_text: string | null;
 };
 
 function mapAssignment(row: DbAssignment): Assignment {
@@ -85,7 +93,10 @@ function mapAssignment(row: DbAssignment): Assignment {
     title: row.title,
     description: row.description ?? undefined,
     dueDate: row.due_date,
-    createdAt: row.created_at
+    createdAt: row.created_at,
+    submissionType: (row.submission_type as Assignment["submissionType"]) ?? "quiz",
+    maxUploads: row.max_uploads ?? 3,
+    gradingFocus: row.grading_focus ?? undefined
   };
 }
 
@@ -127,7 +138,8 @@ function mapAssignmentSubmission(row: DbAssignmentSubmission): AssignmentSubmiss
     answers,
     score: row.score,
     total: row.total,
-    submittedAt: row.submitted_at
+    submittedAt: row.submitted_at,
+    submissionText: row.submission_text ?? undefined
   };
 }
 
@@ -225,6 +237,7 @@ export async function upsertAssignmentSubmission(input: {
   answers: Record<string, string>;
   score: number;
   total: number;
+  submissionText?: string;
 }): Promise<AssignmentSubmission> {
   const submittedAt = new Date().toISOString();
   if (!isDbEnabled()) {
@@ -239,7 +252,8 @@ export async function upsertAssignmentSubmission(input: {
       answers: input.answers,
       score: input.score,
       total: input.total,
-      submittedAt
+      submittedAt,
+      submissionText: input.submissionText
     };
     if (index >= 0) {
       list[index] = next;
@@ -252,15 +266,25 @@ export async function upsertAssignmentSubmission(input: {
 
   const id = `assign-sub-${crypto.randomBytes(6).toString("hex")}`;
   const row = await queryOne<DbAssignmentSubmission>(
-    `INSERT INTO assignment_submissions (id, assignment_id, student_id, answers, score, total, submitted_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO assignment_submissions (id, assignment_id, student_id, answers, score, total, submitted_at, submission_text)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      ON CONFLICT (assignment_id, student_id) DO UPDATE SET
        answers = EXCLUDED.answers,
        score = EXCLUDED.score,
        total = EXCLUDED.total,
-       submitted_at = EXCLUDED.submitted_at
+       submitted_at = EXCLUDED.submitted_at,
+       submission_text = EXCLUDED.submission_text
      RETURNING *`,
-    [id, input.assignmentId, input.studentId, input.answers, input.score, input.total, submittedAt]
+    [
+      id,
+      input.assignmentId,
+      input.studentId,
+      input.answers,
+      input.score,
+      input.total,
+      submittedAt,
+      input.submissionText ?? null
+    ]
   );
   return row
     ? mapAssignmentSubmission(row)
@@ -271,7 +295,8 @@ export async function upsertAssignmentSubmission(input: {
         answers: input.answers,
         score: input.score,
         total: input.total,
-        submittedAt
+        submittedAt,
+        submissionText: input.submissionText
       };
 }
 
@@ -334,9 +359,14 @@ export async function createAssignment(input: {
   description?: string;
   dueDate: string;
   questionIds: string[];
+  submissionType?: Assignment["submissionType"];
+  maxUploads?: number;
+  gradingFocus?: string;
 }): Promise<Assignment> {
   const createdAt = new Date().toISOString();
   const uniqueQuestions = Array.from(new Set(input.questionIds));
+  const submissionType = input.submissionType ?? "quiz";
+  const maxUploads = Math.max(1, Math.min(input.maxUploads ?? 3, 10));
 
   if (!isDbEnabled()) {
     const assignments = await getAssignments();
@@ -346,7 +376,10 @@ export async function createAssignment(input: {
       title: input.title,
       description: input.description,
       dueDate: input.dueDate,
-      createdAt
+      createdAt,
+      submissionType,
+      maxUploads,
+      gradingFocus: input.gradingFocus
     };
     assignments.push(assignment);
     writeJson(ASSIGNMENT_FILE, assignments);
@@ -371,10 +404,20 @@ export async function createAssignment(input: {
 
   const id = `assign-${crypto.randomBytes(6).toString("hex")}`;
   const row = await queryOne<DbAssignment>(
-    `INSERT INTO assignments (id, class_id, title, description, due_date, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO assignments (id, class_id, title, description, due_date, created_at, submission_type, max_uploads, grading_focus)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
-    [id, input.classId, input.title, input.description ?? null, input.dueDate, createdAt]
+    [
+      id,
+      input.classId,
+      input.title,
+      input.description ?? null,
+      input.dueDate,
+      createdAt,
+      submissionType,
+      maxUploads,
+      input.gradingFocus ?? null
+    ]
   );
 
   for (const questionId of uniqueQuestions) {
@@ -390,7 +433,19 @@ export async function createAssignment(input: {
     await createAssignmentProgress(id, studentId);
   }
 
-  return row ? mapAssignment(row) : { id, ...input, createdAt };
+  return row
+    ? mapAssignment(row)
+    : {
+        id,
+        classId: input.classId,
+        title: input.title,
+        description: input.description,
+        dueDate: input.dueDate,
+        createdAt,
+        submissionType,
+        maxUploads,
+        gradingFocus: input.gradingFocus
+      };
 }
 
 export async function completeAssignmentProgress(input: {

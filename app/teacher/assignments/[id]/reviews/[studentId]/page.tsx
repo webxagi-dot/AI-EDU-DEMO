@@ -6,10 +6,19 @@ import Card from "@/components/Card";
 import EduIcon from "@/components/EduIcon";
 
 type ReviewPayload = {
-  assignment: { id: string; title: string; dueDate: string };
+  assignment: { id: string; title: string; dueDate: string; submissionType?: "quiz" | "upload" };
   class: { id: string; name: string; subject: string; grade: string };
   student: { id: string; name: string; email: string };
-  submission?: { answers: Record<string, string>; score: number; total: number } | null;
+  submission?: { answers: Record<string, string>; score: number; total: number; submissionText?: string } | null;
+  uploads?: Array<{
+    id: string;
+    fileName: string;
+    mimeType: string;
+    size: number;
+    contentBase64: string;
+    createdAt: string;
+  }>;
+  aiReview?: { result?: any; provider?: string } | null;
   questions: Array<{
     id: string;
     stem: string;
@@ -36,6 +45,8 @@ export default function TeacherAssignmentReviewPage({
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiReview, setAiReview] = useState<any>(null);
 
   async function load() {
     setError(null);
@@ -52,6 +63,7 @@ export default function TeacherAssignmentReviewPage({
       nextState[item.questionId] = { wrongTag: item.wrongTag ?? "", comment: item.comment ?? "" };
     });
     setItemState(nextState);
+    setAiReview(payload.aiReview?.result ?? null);
   }
 
   useEffect(() => {
@@ -62,6 +74,27 @@ export default function TeacherAssignmentReviewPage({
     () => (data?.questions ?? []).filter((item) => !item.correct),
     [data]
   );
+  const canAiReview = (data?.uploads?.length ?? 0) > 0;
+
+  async function handleAiReview() {
+    if (!data) return;
+    setAiLoading(true);
+    setMessage(null);
+    setError(null);
+    const res = await fetch(`/api/teacher/assignments/${params.id}/ai-review`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ studentId: params.studentId })
+    });
+    const payload = await res.json();
+    if (!res.ok) {
+      setError(payload?.error ?? "AI 批改失败");
+      setAiLoading(false);
+      return;
+    }
+    setAiReview(payload?.data?.result ?? null);
+    setAiLoading(false);
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -132,6 +165,11 @@ export default function TeacherAssignmentReviewPage({
             <div className="pill-list">
               <span className="pill">错题 {wrongQuestions.length} 题</span>
             </div>
+            {data.submission?.submissionText ? (
+              <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-1)" }}>
+                学生备注：{data.submission.submissionText}
+              </div>
+            ) : null}
           </div>
         </div>
         <Link className="button ghost" href={`/teacher/assignments/${params.id}`} style={{ marginTop: 12 }}>
@@ -139,8 +177,102 @@ export default function TeacherAssignmentReviewPage({
         </Link>
       </Card>
 
+      {data.uploads?.length ? (
+        <Card title="学生上传作业" tag="附件">
+          <div className="grid" style={{ gap: 10 }}>
+            {data.uploads.map((item) => (
+              <div className="card" key={item.id}>
+                <div className="section-title">{item.fileName}</div>
+                <div style={{ fontSize: 12, color: "var(--ink-1)" }}>
+                  {Math.round(item.size / 1024)} KB · {new Date(item.createdAt).toLocaleString("zh-CN")}
+                </div>
+                {item.mimeType.startsWith("image/") ? (
+                  <img
+                    src={`data:${item.mimeType};base64,${item.contentBase64}`}
+                    alt={item.fileName}
+                    style={{ width: "100%", maxWidth: 420, marginTop: 8, borderRadius: 12 }}
+                  />
+                ) : (
+                  <a
+                    href={`data:${item.mimeType};base64,${item.contentBase64}`}
+                    download={item.fileName}
+                    style={{ marginTop: 8, display: "inline-block" }}
+                  >
+                    下载附件
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : null}
+
+      <Card title="AI 批改" tag="AI">
+        <div className="cta-row">
+          <button className="button primary" type="button" onClick={handleAiReview} disabled={aiLoading || !canAiReview}>
+            {aiLoading ? "批改中..." : "生成 AI 批改"}
+          </button>
+        </div>
+        {!canAiReview ? <p style={{ marginTop: 8, color: "var(--ink-1)" }}>学生未上传作业附件。</p> : null}
+        {aiReview ? (
+          <div className="grid" style={{ gap: 10, marginTop: 12 }}>
+            <div className="card">
+              <div className="section-title">综合评分</div>
+              <div style={{ fontSize: 20, fontWeight: 700 }}>{aiReview.score ?? 0} 分</div>
+              <p style={{ marginTop: 8 }}>{aiReview.summary ?? "暂无总结。"}</p>
+            </div>
+            {aiReview.strengths?.length ? (
+              <div className="card">
+                <div className="section-title">优点</div>
+                <ul style={{ margin: "6px 0 0 16px" }}>
+                  {aiReview.strengths.map((item: string) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {aiReview.issues?.length ? (
+              <div className="card">
+                <div className="section-title">问题</div>
+                <ul style={{ margin: "6px 0 0 16px" }}>
+                  {aiReview.issues.map((item: string) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {aiReview.suggestions?.length ? (
+              <div className="card">
+                <div className="section-title">改进建议</div>
+                <ul style={{ margin: "6px 0 0 16px" }}>
+                  {aiReview.suggestions.map((item: string) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {aiReview.rubric?.length ? (
+              <div className="card">
+                <div className="section-title">评分维度</div>
+                <div className="grid" style={{ gap: 8, marginTop: 6 }}>
+                  {aiReview.rubric.map((item: any) => (
+                    <div key={item.item}>
+                      {item.item}：{item.score} 分 · {item.comment}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <p style={{ marginTop: 8, color: "var(--ink-1)" }}>暂无 AI 批改结果。</p>
+        )}
+      </Card>
+
       <Card title="错题复盘" tag="批改">
-        {wrongQuestions.length === 0 ? (
+        {data.assignment.submissionType === "upload" ? (
+          <p>该作业为上传作业，请结合附件与 AI 批改结果进行点评。</p>
+        ) : wrongQuestions.length === 0 ? (
           <p>该学生全部答对，无需批改。</p>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: "grid", gap: 16 }}>

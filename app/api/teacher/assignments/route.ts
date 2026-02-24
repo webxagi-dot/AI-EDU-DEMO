@@ -86,10 +86,14 @@ export async function POST(request: Request) {
     mode?: "bank" | "ai";
     difficulty?: Difficulty;
     questionType?: string;
+    submissionType?: "quiz" | "upload";
+    maxUploads?: number;
+    gradingFocus?: string;
   };
 
+  const submissionType = body.submissionType === "upload" ? "upload" : "quiz";
   const questionCount = Number(body.questionCount ?? 0);
-  if (!body.classId || !body.title || questionCount <= 0) {
+  if (!body.classId || !body.title || (submissionType === "quiz" && questionCount <= 0)) {
     return NextResponse.json({ error: "missing fields" }, { status: 400 });
   }
 
@@ -105,7 +109,7 @@ export async function POST(request: Request) {
 
   let questionIds: string[] = [];
 
-  if (mode === "ai") {
+  if (submissionType === "quiz" && mode === "ai") {
     const provider = process.env.LLM_PROVIDER ?? "mock";
     if (provider === "mock") {
       return NextResponse.json({ error: "请先配置 AI 模型" }, { status: 400 });
@@ -168,7 +172,7 @@ export async function POST(request: Request) {
       }
       questionIds.push(saved.id);
     }
-  } else {
+  } else if (submissionType === "quiz") {
     const questions = await getQuestions();
     let pool = questions.filter((item) => item.subject === klass.subject && item.grade === klass.grade);
     if (body.knowledgePointId) {
@@ -194,7 +198,10 @@ export async function POST(request: Request) {
     title: body.title,
     description: body.description,
     dueDate,
-    questionIds
+    questionIds,
+    submissionType,
+    maxUploads: body.maxUploads,
+    gradingFocus: body.gradingFocus
   });
 
   const studentIds = await getClassStudentIds(klass.id);

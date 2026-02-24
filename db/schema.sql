@@ -212,8 +212,15 @@ CREATE TABLE IF NOT EXISTS assignments (
   title TEXT NOT NULL,
   description TEXT,
   due_date TIMESTAMPTZ NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL
+  created_at TIMESTAMPTZ NOT NULL,
+  submission_type TEXT NOT NULL DEFAULT 'quiz',
+  max_uploads INT NOT NULL DEFAULT 3,
+  grading_focus TEXT
 );
+
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS submission_type TEXT;
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS max_uploads INT;
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS grading_focus TEXT;
 
 CREATE TABLE IF NOT EXISTS assignment_items (
   id TEXT PRIMARY KEY,
@@ -239,6 +246,33 @@ CREATE TABLE IF NOT EXISTS assignment_submissions (
   score INT NOT NULL,
   total INT NOT NULL,
   submitted_at TIMESTAMPTZ NOT NULL,
+  UNIQUE (assignment_id, student_id)
+);
+
+ALTER TABLE assignment_submissions ADD COLUMN IF NOT EXISTS submission_text TEXT;
+
+CREATE TABLE IF NOT EXISTS assignment_uploads (
+  id TEXT PRIMARY KEY,
+  assignment_id TEXT REFERENCES assignments(id) ON DELETE CASCADE,
+  student_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  file_name TEXT NOT NULL,
+  mime_type TEXT NOT NULL,
+  size INT NOT NULL,
+  content_base64 TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS assignment_uploads_assignment_idx ON assignment_uploads (assignment_id);
+CREATE INDEX IF NOT EXISTS assignment_uploads_student_idx ON assignment_uploads (student_id);
+
+CREATE TABLE IF NOT EXISTS assignment_ai_reviews (
+  id TEXT PRIMARY KEY,
+  assignment_id TEXT REFERENCES assignments(id) ON DELETE CASCADE,
+  student_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  provider TEXT,
+  result JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL,
   UNIQUE (assignment_id, student_id)
 );
 

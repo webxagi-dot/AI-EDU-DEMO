@@ -12,6 +12,8 @@ type AssignmentDetail = {
     description?: string;
     dueDate: string;
     createdAt: string;
+    submissionType?: "quiz" | "upload";
+    gradingFocus?: string;
   };
   class: {
     id: string;
@@ -91,6 +93,11 @@ export default function TeacherAssignmentDetailPage({ params }: { params: { id: 
             <EduIcon name="board" />
             <div className="section-title">{data.assignment.title}</div>
             <p>{data.assignment.description || "暂无作业说明。"}</p>
+            {data.assignment.gradingFocus ? (
+              <div style={{ marginTop: 6, fontSize: 12, color: "var(--ink-1)" }}>
+                批改重点：{data.assignment.gradingFocus}
+              </div>
+            ) : null}
           </div>
           <div className="card feature-card">
             <EduIcon name="chart" />
@@ -99,6 +106,7 @@ export default function TeacherAssignmentDetailPage({ params }: { params: { id: 
             <div className="pill-list">
               <span className="pill">已完成 {completedCount}</span>
               <span className="pill">待完成 {data.students.length - completedCount}</span>
+              <span className="pill">{data.assignment.submissionType === "upload" ? "上传作业" : "在线作答"}</span>
             </div>
           </div>
         </div>

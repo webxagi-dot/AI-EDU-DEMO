@@ -5,6 +5,8 @@ import { getAssignmentById, getAssignmentItems, getAssignmentSubmission } from "
 import { getQuestions } from "@/lib/content";
 import { createNotification } from "@/lib/notifications";
 import { saveReview, getReview } from "@/lib/reviews";
+import { getAssignmentUploads } from "@/lib/assignment-uploads";
+import { getAssignmentAIReview } from "@/lib/assignment-ai";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +34,8 @@ export async function GET(_: Request, context: { params: { id: string; studentId
   }
 
   const submission = await getAssignmentSubmission(assignment.id, studentId);
+  const uploads = await getAssignmentUploads(assignment.id, studentId);
+  const aiReview = await getAssignmentAIReview(assignment.id, studentId);
   const items = await getAssignmentItems(assignment.id);
   const questions = await getQuestions();
   const questionMap = new Map(questions.map((item) => [item.id, item]));
@@ -61,6 +65,8 @@ export async function GET(_: Request, context: { params: { id: string; studentId
     class: klass,
     student: { id: student.id, name: student.name, email: student.email },
     submission,
+    uploads,
+    aiReview,
     questions: details,
     review: reviewResult.review,
     reviewItems: reviewResult.items

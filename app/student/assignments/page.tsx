@@ -16,6 +16,7 @@ type AssignmentItem = {
   score: number | null;
   total: number | null;
   completedAt: string | null;
+  submissionType?: "quiz" | "upload";
 };
 
 const subjectLabel: Record<string, string> = {
@@ -76,6 +77,7 @@ export default function StudentAssignmentsPage() {
                 </div>
                 <div className="pill-list" style={{ marginTop: 8 }}>
                   <span className="pill">截止 {new Date(item.dueDate).toLocaleDateString("zh-CN")}</span>
+                  <span className="pill">{item.submissionType === "upload" ? "上传作业" : "在线作答"}</span>
                   {item.status === "completed" ? (
                     <span className="pill">
                       得分 {item.score ?? 0}/{item.total ?? 0}

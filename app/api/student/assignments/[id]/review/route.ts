@@ -4,6 +4,7 @@ import { getClassesByStudent } from "@/lib/classes";
 import { getAssignmentById, getAssignmentItems, getAssignmentSubmission } from "@/lib/assignments";
 import { getQuestions } from "@/lib/content";
 import { getReview } from "@/lib/reviews";
+import { getAssignmentAIReview } from "@/lib/assignment-ai";
 
 export const dynamic = "force-dynamic";
 
@@ -48,11 +49,13 @@ export async function GET(_: Request, context: { params: { id: string } }) {
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
   const reviewResult = await getReview(assignment.id, user.id);
+  const aiReview = await getAssignmentAIReview(assignment.id, user.id);
   return NextResponse.json({
     assignment,
     submission,
     questions: details,
     review: reviewResult.review,
-    reviewItems: reviewResult.items
+    reviewItems: reviewResult.items,
+    aiReview
   });
 }
