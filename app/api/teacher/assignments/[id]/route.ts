@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getClassById, getClassStudents } from "@/lib/classes";
 import { getAssignmentById, getAssignmentProgress } from "@/lib/assignments";
+import { getModuleById } from "@/lib/modules";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,7 @@ export async function GET(_: Request, context: { params: { id: string } }) {
 
   return NextResponse.json({
     assignment,
+    module: assignment.moduleId ? await getModuleById(assignment.moduleId) : null,
     class: klass,
     students: roster
   });

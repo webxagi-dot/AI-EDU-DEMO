@@ -7,6 +7,7 @@ import type { KnowledgePoint } from "@/lib/types";
 import { createNotification } from "@/lib/notifications";
 import { generateQuestionDraft } from "@/lib/ai";
 import type { Difficulty } from "@/lib/types";
+import { getModuleById, getModulesByClass } from "@/lib/modules";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +51,8 @@ export async function GET() {
   const classes = await getClassesByTeacher(user.id);
   const classIds = classes.map((item) => item.id);
   const classMap = new Map(classes.map((item) => [item.id, item]));
+  const moduleLists = await Promise.all(classes.map((klass) => getModulesByClass(klass.id)));
+  const moduleMap = new Map(moduleLists.flat().map((item) => [item.id, item]));
   const assignments = await getAssignmentsByClassIds(classIds);
 
   const data = await Promise.all(
@@ -57,11 +60,13 @@ export async function GET() {
       const progress = await getAssignmentProgress(assignment.id);
       const completed = progress.filter((item) => item.status === "completed").length;
       const klass = classMap.get(assignment.classId);
+      const moduleTitle = assignment.moduleId ? moduleMap.get(assignment.moduleId)?.title ?? "" : "";
       return {
         ...assignment,
         className: klass?.name ?? "-",
         classSubject: klass?.subject ?? "-",
         classGrade: klass?.grade ?? "-",
+        moduleTitle,
         total: progress.length,
         completed
       };
@@ -90,6 +95,7 @@ export async function POST(request: Request) {
     submissionType?: "quiz" | "upload" | "essay";
     maxUploads?: number;
     gradingFocus?: string;
+    moduleId?: string;
   };
 
   const submissionType =
@@ -102,6 +108,13 @@ export async function POST(request: Request) {
   const klass = await getClassById(body.classId);
   if (!klass || klass.teacherId !== user.id) {
     return NextResponse.json({ error: "class not found" }, { status: 404 });
+  }
+
+  if (body.moduleId) {
+    const moduleRecord = await getModuleById(body.moduleId);
+    if (!moduleRecord || moduleRecord.classId !== klass.id) {
+      return NextResponse.json({ error: "module not found" }, { status: 404 });
+    }
   }
 
   const dueDate = normalizeDueDate(body.dueDate);
@@ -218,6 +231,7 @@ export async function POST(request: Request) {
 
   const assignment = await createAssignment({
     classId: klass.id,
+    moduleId: body.moduleId,
     title: body.title,
     description: body.description,
     dueDate,

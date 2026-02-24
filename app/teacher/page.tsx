@@ -23,6 +23,7 @@ type AssignmentItem = {
   className: string;
   classSubject: string;
   classGrade: string;
+  moduleTitle?: string;
   title: string;
   dueDate: string;
   total: number;
@@ -43,6 +44,7 @@ export default function TeacherPage() {
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [assignments, setAssignments] = useState<AssignmentItem[]>([]);
   const [knowledgePoints, setKnowledgePoints] = useState<KnowledgePoint[]>([]);
+  const [modules, setModules] = useState<any[]>([]);
   const [insights, setInsights] = useState<any>(null);
   const [unauthorized, setUnauthorized] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -56,6 +58,7 @@ export default function TeacherPage() {
   const [studentForm, setStudentForm] = useState({ classId: "", email: "" });
   const [assignmentForm, setAssignmentForm] = useState({
     classId: "",
+    moduleId: "",
     title: "",
     description: "",
     dueDate: "",
@@ -126,6 +129,21 @@ export default function TeacherPage() {
     }
   }, [classes, studentForm.classId, assignmentForm.classId, assignmentForm.dueDate]);
 
+  useEffect(() => {
+    if (!assignmentForm.classId) return;
+    setModules([]);
+    setAssignmentForm((prev) => ({ ...prev, moduleId: "" }));
+    fetch(`/api/teacher/modules?classId=${assignmentForm.classId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const list = data.data ?? [];
+        setModules(list);
+        if (list.length) {
+          setAssignmentForm((prev) => ({ ...prev, moduleId: list[0].id }));
+        }
+      });
+  }, [assignmentForm.classId]);
+
   async function handleCreateClass(event: React.FormEvent) {
     event.preventDefault();
     setLoading(true);
@@ -184,6 +202,7 @@ export default function TeacherPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         classId: assignmentForm.classId,
+        moduleId: assignmentForm.moduleId || undefined,
         title: assignmentForm.title,
         description: assignmentForm.description,
         dueDate: assignmentForm.dueDate,
@@ -416,20 +435,35 @@ export default function TeacherPage() {
 
       <Card title="作业发布">
         <form onSubmit={handleCreateAssignment} style={{ display: "grid", gap: 12 }}>
-          <label>
-            <div className="section-title">选择班级</div>
-            <select
-              value={assignmentForm.classId}
-              onChange={(event) => setAssignmentForm((prev) => ({ ...prev, classId: event.target.value }))}
-              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
-            >
-              {classes.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name} · {SUBJECT_LABELS[item.subject] ?? item.subject} · {item.grade} 年级
-                </option>
-              ))}
-            </select>
-          </label>
+            <label>
+              <div className="section-title">选择班级</div>
+              <select
+                value={assignmentForm.classId}
+                onChange={(event) => setAssignmentForm((prev) => ({ ...prev, classId: event.target.value }))}
+                style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+              >
+                {classes.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name} · {SUBJECT_LABELS[item.subject] ?? item.subject} · {item.grade} 年级
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <div className="section-title">关联模块（可选）</div>
+              <select
+                value={assignmentForm.moduleId}
+                onChange={(event) => setAssignmentForm((prev) => ({ ...prev, moduleId: event.target.value }))}
+                style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+              >
+                <option value="">不关联模块</option>
+                {modules.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.title}
+                  </option>
+                ))}
+              </select>
+            </label>
           <label>
             <div className="section-title">作业标题</div>
             <input
@@ -673,6 +707,7 @@ export default function TeacherPage() {
                 <p>
                   {item.className} · {SUBJECT_LABELS[item.classSubject] ?? item.classSubject} · {item.classGrade} 年级
                 </p>
+                {item.moduleTitle ? <p>关联模块：{item.moduleTitle}</p> : null}
                 <p>截止日期：{new Date(item.dueDate).toLocaleDateString("zh-CN")}</p>
                 <p>类型：{ASSIGNMENT_TYPE_LABELS[item.submissionType ?? "quiz"]}</p>
                 <p>

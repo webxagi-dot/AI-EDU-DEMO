@@ -115,6 +115,41 @@ export async function GET(request: Request) {
   const completionRate = totalProgress ? Math.round((completedProgress / totalProgress) * 100) : 0;
   const avgScore = totalSum ? Math.round((scoreSum / totalSum) * 100) : 0;
 
+  const distributionBuckets = [
+    { label: "<60", min: 0, max: 59 },
+    { label: "60-69", min: 60, max: 69 },
+    { label: "70-79", min: 70, max: 79 },
+    { label: "80-89", min: 80, max: 89 },
+    { label: "90-100", min: 90, max: 100 }
+  ];
+  const distribution = distributionBuckets.map((bucket) => {
+    const count = studentRows.filter(
+      (student) => student.stats.avgScore >= bucket.min && student.stats.avgScore <= bucket.max
+    ).length;
+    return { label: bucket.label, count };
+  });
+
+  const trend = assignments
+    .map((assignment, index) => {
+      const progress = progressLists[index] ?? [];
+      const scored = progress.filter(
+        (item) => typeof item.score === "number" && typeof item.total === "number" && (item.total ?? 0) > 0
+      );
+      const scoreSum = scored.reduce((sum, item) => sum + (item.score ?? 0), 0);
+      const totalSum = scored.reduce((sum, item) => sum + (item.total ?? 0), 0);
+      const avgScore = totalSum ? Math.round((scoreSum / totalSum) * 100) : 0;
+      const completed = progress.filter((item) => item.status === "completed").length;
+      const completionRate = students.length ? Math.round((completed / students.length) * 100) : 0;
+      return {
+        assignmentId: assignment.id,
+        title: assignment.title,
+        dueDate: assignment.dueDate,
+        avgScore,
+        completionRate
+      };
+    })
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+
   return NextResponse.json({
     classes,
     class: klass,
@@ -126,6 +161,8 @@ export async function GET(request: Request) {
       assignments: assignments.length,
       completionRate,
       avgScore
-    }
+    },
+    distribution,
+    trend
   });
 }

@@ -149,7 +149,48 @@ function buildClasses(teachers) {
   return classes;
 }
 
-function buildAssignments(classes, questionsByKey) {
+function buildModules(classes) {
+  const modules = [];
+  const resources = [];
+  classes.forEach((klass, idx) => {
+    for (let i = 1; i <= 2; i += 1) {
+      const moduleId = `${klass.id}-mod-${i}`;
+      modules.push({
+        id: moduleId,
+        classId: klass.id,
+        parentId: null,
+        title: `${klass.name} 单元 ${i}`,
+        description: "本单元核心知识与作业安排。",
+        orderIndex: i,
+        createdAt: iso(now)
+      });
+      resources.push({
+        id: `${moduleId}-res-1`,
+        moduleId,
+        title: "课件链接",
+        resourceType: "link",
+        linkUrl: "https://example.com",
+        createdAt: iso(now)
+      });
+      if (idx % 2 === 0) {
+        resources.push({
+          id: `${moduleId}-res-2`,
+          moduleId,
+          title: "示例资料",
+          resourceType: "file",
+          fileName: "资料.txt",
+          mimeType: "text/plain",
+          size: BASE64_TEXT.length,
+          contentBase64: BASE64_TEXT,
+          createdAt: iso(now)
+        });
+      }
+    }
+  });
+  return { modules, resources };
+}
+
+function buildAssignments(classes, questionsByKey, modulesByClass) {
   const assignments = [];
   const assignmentItems = [];
   const assignmentRubrics = [];
@@ -162,9 +203,12 @@ function buildAssignments(classes, questionsByKey) {
       const submissionType = ["quiz", "upload", "essay"][assignmentIndex % 3];
       const id = makeId("assign-bulk", assignmentIndex);
       const dueDate = daysAhead(assignmentIndex + 2);
+      const moduleList = modulesByClass.get(klass.id) ?? [];
+      const moduleId = moduleList.length ? moduleList[i % moduleList.length].id : null;
       assignments.push({
         id,
         classId: klass.id,
+        moduleId,
         title: `${klass.name} 作业 ${assignmentIndex}`,
         description: "自动生成的测试作业。",
         dueDate,
@@ -400,6 +444,12 @@ async function seedJson() {
   const { teachers, students, parents } = buildUsers();
   const profiles = buildStudentProfiles(students);
   const classes = buildClasses(teachers);
+  const { modules, resources } = buildModules(classes);
+  const modulesByClass = new Map();
+  modules.forEach((module) => {
+    if (!modulesByClass.has(module.classId)) modulesByClass.set(module.classId, []);
+    modulesByClass.get(module.classId).push(module);
+  });
   const knowledgePoints = buildKnowledgePoints();
   const questions = buildQuestions(knowledgePoints);
   const questionsByKey = new Map();
@@ -408,7 +458,7 @@ async function seedJson() {
     if (!questionsByKey.has(key)) questionsByKey.set(key, []);
     questionsByKey.get(key).push(q);
   });
-  const { assignments, assignmentItems, assignmentRubrics } = buildAssignments(classes, questionsByKey);
+  const { assignments, assignmentItems, assignmentRubrics } = buildAssignments(classes, questionsByKey, modulesByClass);
   const {
     classStudents,
     progress,
@@ -445,6 +495,14 @@ async function seedJson() {
   const classList = readJson("classes.json", []);
   classes.forEach((klass) => upsert(classList, (item) => item.id === klass.id, klass));
   writeJson("classes.json", classList);
+
+  const moduleList = readJson("course-modules.json", []);
+  modules.forEach((mod) => upsert(moduleList, (item) => item.id === mod.id, mod));
+  writeJson("course-modules.json", moduleList);
+
+  const resourceList = readJson("module-resources.json", []);
+  resources.forEach((res) => upsert(resourceList, (item) => item.id === res.id, res));
+  writeJson("module-resources.json", resourceList);
 
   const classStudentList = readJson("class-students.json", []);
   classStudents.forEach((cs) => upsert(classStudentList, (item) => item.classId === cs.classId && item.studentId === cs.studentId, cs));
@@ -553,6 +611,12 @@ async function seedDb() {
 
     const profiles = buildStudentProfiles(updatedStudents);
     const classes = buildClasses(updatedTeachers);
+    const { modules, resources } = buildModules(classes);
+    const modulesByClass = new Map();
+    modules.forEach((module) => {
+      if (!modulesByClass.has(module.classId)) modulesByClass.set(module.classId, []);
+      modulesByClass.get(module.classId).push(module);
+    });
     const knowledgePoints = buildKnowledgePoints();
     const questions = buildQuestions(knowledgePoints);
     const questionsByKey = new Map();
@@ -561,7 +625,7 @@ async function seedDb() {
       if (!questionsByKey.has(key)) questionsByKey.set(key, []);
       questionsByKey.get(key).push(q);
     });
-    const { assignments, assignmentItems, assignmentRubrics } = buildAssignments(classes, questionsByKey);
+    const { assignments, assignmentItems, assignmentRubrics } = buildAssignments(classes, questionsByKey, modulesByClass);
     const {
       classStudents,
       progress,
@@ -690,20 +754,59 @@ async function seedDb() {
       );
     }
 
+    for (const module of modules) {
+      await client.query(
+        `INSERT INTO course_modules (id, class_id, parent_id, title, description, order_index, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (id) DO NOTHING`,
+        [
+          module.id,
+          module.classId,
+          module.parentId ?? null,
+          module.title,
+          module.description ?? null,
+          module.orderIndex ?? 0,
+          module.createdAt
+        ]
+      );
+    }
+
+    for (const resource of resources) {
+      await client.query(
+        `INSERT INTO module_resources (id, module_id, title, resource_type, file_name, mime_type, size, content_base64, link_url, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         ON CONFLICT (id) DO NOTHING`,
+        [
+          resource.id,
+          resource.moduleId,
+          resource.title,
+          resource.resourceType,
+          resource.fileName ?? null,
+          resource.mimeType ?? null,
+          resource.size ?? null,
+          resource.contentBase64 ?? null,
+          resource.linkUrl ?? null,
+          resource.createdAt
+        ]
+      );
+    }
+
     for (const assignment of assignments) {
       await client.query(
-        `INSERT INTO assignments (id, class_id, title, description, due_date, created_at, submission_type, max_uploads, grading_focus)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `INSERT INTO assignments (id, class_id, module_id, title, description, due_date, created_at, submission_type, max_uploads, grading_focus)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          ON CONFLICT (id) DO UPDATE SET
            title = EXCLUDED.title,
            description = EXCLUDED.description,
            due_date = EXCLUDED.due_date,
+           module_id = EXCLUDED.module_id,
            submission_type = EXCLUDED.submission_type,
            max_uploads = EXCLUDED.max_uploads,
            grading_focus = EXCLUDED.grading_focus`,
         [
           assignment.id,
           assignment.classId,
+          assignment.moduleId ?? null,
           assignment.title,
           assignment.description,
           assignment.dueDate,

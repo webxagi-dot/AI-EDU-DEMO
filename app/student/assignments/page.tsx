@@ -13,6 +13,7 @@ type AssignmentItem = {
   className: string;
   classSubject: string;
   classGrade: string;
+  moduleTitle?: string;
   status: string;
   score: number | null;
   total: number | null;
@@ -69,6 +70,9 @@ export default function StudentAssignmentsPage() {
                   <p>
                     {item.className} · {SUBJECT_LABELS[item.classSubject] ?? item.classSubject} · {item.classGrade} 年级
                   </p>
+                  {item.moduleTitle ? (
+                    <div style={{ fontSize: 12, color: "var(--ink-1)" }}>模块：{item.moduleTitle}</div>
+                  ) : null}
                 </div>
                 <div className="pill-list" style={{ marginTop: 8 }}>
                   <span className="pill">截止 {new Date(item.dueDate).toLocaleDateString("zh-CN")}</span>

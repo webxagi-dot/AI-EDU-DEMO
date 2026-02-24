@@ -169,6 +169,15 @@ export default function StudentPage() {
             进入作业
           </Link>
         </Card>
+        <Card title="课程模块" tag="路径">
+          <div className="feature-card">
+            <EduIcon name="book" />
+            <p>按单元查看学习内容与作业。</p>
+          </div>
+          <Link className="button secondary" href="/student/modules" style={{ marginTop: 12 }}>
+            查看模块
+          </Link>
+        </Card>
         <Card title="AI 辅导" tag="智能">
           <div className="feature-card">
             <EduIcon name="brain" />

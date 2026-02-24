@@ -15,7 +15,9 @@ type AssignmentDetail = {
     createdAt: string;
     submissionType?: "quiz" | "upload" | "essay";
     gradingFocus?: string;
+    moduleId?: string;
   };
+  module?: { id: string; title: string } | null;
   class: {
     id: string;
     name: string;
@@ -96,6 +98,11 @@ export default function TeacherAssignmentDetailPage({ params }: { params: { id: 
             {data.assignment.gradingFocus ? (
               <div style={{ marginTop: 6, fontSize: 12, color: "var(--ink-1)" }}>
                 批改重点：{data.assignment.gradingFocus}
+              </div>
+            ) : null}
+            {data.module ? (
+              <div style={{ marginTop: 6, fontSize: 12, color: "var(--ink-1)" }}>
+                关联模块：{data.module.title}
               </div>
             ) : null}
           </div>

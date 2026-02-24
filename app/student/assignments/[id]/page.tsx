@@ -17,6 +17,7 @@ type AssignmentDetail = {
     maxUploads?: number;
     gradingFocus?: string;
   };
+  module?: { id: string; title: string } | null;
   class: {
     id: string;
     name: string;
@@ -195,6 +196,11 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
             {data.assignment.gradingFocus ? (
               <div style={{ marginTop: 6, fontSize: 12, color: "var(--ink-1)" }}>
                 批改重点：{data.assignment.gradingFocus}
+              </div>
+            ) : null}
+            {data.module ? (
+              <div style={{ marginTop: 6, fontSize: 12, color: "var(--ink-1)" }}>
+                关联模块：{data.module.title}
               </div>
             ) : null}
           </div>

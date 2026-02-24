@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getClassesByStudent } from "@/lib/classes";
 import { getAssignmentById, getAssignmentItems, getAssignmentProgressForStudent } from "@/lib/assignments";
 import { getQuestions } from "@/lib/content";
+import { getModuleById } from "@/lib/modules";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,7 @@ export async function GET(_: Request, context: { params: { id: string } }) {
 
   return NextResponse.json({
     assignment,
+    module: assignment.moduleId ? await getModuleById(assignment.moduleId) : null,
     class: { id: klass.id, name: klass.name, subject: klass.subject, grade: klass.grade },
     questions: payloadQuestions,
     progress

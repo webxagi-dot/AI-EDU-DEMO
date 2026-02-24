@@ -213,6 +213,7 @@ CREATE TABLE IF NOT EXISTS class_join_requests (
 CREATE TABLE IF NOT EXISTS assignments (
   id TEXT PRIMARY KEY,
   class_id TEXT REFERENCES classes(id) ON DELETE CASCADE,
+  module_id TEXT,
   title TEXT NOT NULL,
   description TEXT,
   due_date TIMESTAMPTZ NOT NULL,
@@ -222,9 +223,33 @@ CREATE TABLE IF NOT EXISTS assignments (
   grading_focus TEXT
 );
 
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS module_id TEXT;
 ALTER TABLE assignments ADD COLUMN IF NOT EXISTS submission_type TEXT;
 ALTER TABLE assignments ADD COLUMN IF NOT EXISTS max_uploads INT;
 ALTER TABLE assignments ADD COLUMN IF NOT EXISTS grading_focus TEXT;
+
+CREATE TABLE IF NOT EXISTS course_modules (
+  id TEXT PRIMARY KEY,
+  class_id TEXT REFERENCES classes(id) ON DELETE CASCADE,
+  parent_id TEXT REFERENCES course_modules(id) ON DELETE SET NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  order_index INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS module_resources (
+  id TEXT PRIMARY KEY,
+  module_id TEXT REFERENCES course_modules(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  resource_type TEXT NOT NULL,
+  file_name TEXT,
+  mime_type TEXT,
+  size INT,
+  content_base64 TEXT,
+  link_url TEXT,
+  created_at TIMESTAMPTZ NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS assignment_items (
   id TEXT PRIMARY KEY,
@@ -341,6 +366,7 @@ CREATE INDEX IF NOT EXISTS class_students_student_idx ON class_students (student
 CREATE INDEX IF NOT EXISTS class_join_requests_class_idx ON class_join_requests (class_id);
 CREATE INDEX IF NOT EXISTS class_join_requests_student_idx ON class_join_requests (student_id);
 CREATE INDEX IF NOT EXISTS assignments_class_idx ON assignments (class_id);
+CREATE INDEX IF NOT EXISTS assignments_module_idx ON assignments (module_id);
 CREATE INDEX IF NOT EXISTS assignment_items_assignment_idx ON assignment_items (assignment_id);
 CREATE INDEX IF NOT EXISTS assignment_progress_assignment_idx ON assignment_progress (assignment_id);
 CREATE INDEX IF NOT EXISTS assignment_progress_student_idx ON assignment_progress (student_id);
@@ -357,6 +383,9 @@ CREATE INDEX IF NOT EXISTS announcements_class_idx ON announcements (class_id);
 CREATE INDEX IF NOT EXISTS announcements_created_idx ON announcements (created_at);
 CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id);
 CREATE INDEX IF NOT EXISTS notifications_created_idx ON notifications (created_at);
+CREATE INDEX IF NOT EXISTS course_modules_class_idx ON course_modules (class_id);
+CREATE INDEX IF NOT EXISTS course_modules_parent_idx ON course_modules (parent_id);
+CREATE INDEX IF NOT EXISTS module_resources_module_idx ON module_resources (module_id);
 
 CREATE TABLE IF NOT EXISTS admin_logs (
   id TEXT PRIMARY KEY,

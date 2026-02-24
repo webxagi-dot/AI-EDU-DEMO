@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getClassesByStudent } from "@/lib/classes";
-import { getAssignmentProgressByStudent, getAssignmentsByClassIds } from "@/lib/assignments";
+import { getAssignmentsByClassIds, getAssignmentProgressByStudent } from "@/lib/assignments";
 import { getModulesByClass } from "@/lib/modules";
 
 export const dynamic = "force-dynamic";
@@ -13,29 +13,33 @@ export async function GET() {
   }
 
   const classes = await getClassesByStudent(user.id);
-  const classMap = new Map(classes.map((item) => [item.id, item]));
   const assignments = await getAssignmentsByClassIds(classes.map((item) => item.id));
   const progress = await getAssignmentProgressByStudent(user.id);
   const progressMap = new Map(progress.map((item) => [item.assignmentId, item]));
-  const moduleMap = new Map<string, { id: string; title: string }>();
+
+  const modulesByClass = new Map<string, any[]>();
   for (const klass of classes) {
     const modules = await getModulesByClass(klass.id);
-    modules.forEach((module) => moduleMap.set(module.id, module));
+    modulesByClass.set(klass.id, modules);
   }
 
-  const data = assignments.map((assignment) => {
-    const klass = classMap.get(assignment.classId);
-    const record = progressMap.get(assignment.id);
+  const data = classes.map((klass) => {
+    const modules = modulesByClass.get(klass.id) ?? [];
+    const moduleItems = modules.map((module) => {
+      const moduleAssignments = assignments.filter((assignment) => assignment.moduleId === module.id);
+      const completed = moduleAssignments.filter((assignment) => progressMap.get(assignment.id)?.status === "completed");
+      return {
+        ...module,
+        assignmentCount: moduleAssignments.length,
+        completedCount: completed.length
+      };
+    });
     return {
-      ...assignment,
-      className: klass?.name ?? "-",
-      classSubject: klass?.subject ?? "-",
-      classGrade: klass?.grade ?? "-",
-      moduleTitle: assignment.moduleId ? moduleMap.get(assignment.moduleId)?.title ?? "" : "",
-      status: record?.status ?? "pending",
-      score: record?.score ?? null,
-      total: record?.total ?? null,
-      completedAt: record?.completedAt ?? null
+      classId: klass.id,
+      className: klass.name,
+      subject: klass.subject,
+      grade: klass.grade,
+      modules: moduleItems
     };
   });
 

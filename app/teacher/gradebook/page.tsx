@@ -10,6 +10,8 @@ type GradebookPayload = {
   class: { id: string; name: string; subject: string; grade: string } | null;
   assignments: Array<{ id: string; title: string; dueDate: string; submissionType?: "quiz" | "upload" | "essay" }>;
   assignmentStats: Array<{ assignmentId: string; completed: number; total: number; overdue: number }>;
+  distribution?: Array<{ label: string; count: number }>;
+  trend?: Array<{ assignmentId: string; title: string; dueDate: string; avgScore: number; completionRate: number }>;
   students: Array<{
     id: string;
     name: string;
@@ -55,6 +57,58 @@ export default function TeacherGradebookPage() {
   );
   const visibleAssignments = assignments.slice(0, 6);
   const now = Date.now();
+
+  function exportCSV() {
+    if (!data) return;
+    const header = [
+      "学生",
+      "邮箱",
+      "完成",
+      "待交",
+      "逾期",
+      "迟交",
+      "平均分",
+      ...assignments.map((item) => `${item.title}(${new Date(item.dueDate).toLocaleDateString("zh-CN")})`)
+    ];
+    const rows = data.students.map((student) => {
+      const base = [
+        student.name,
+        student.email,
+        String(student.stats.completed),
+        String(student.stats.pending),
+        String(student.stats.overdue),
+        String(student.stats.late),
+        String(student.stats.avgScore)
+      ];
+      const assignmentCells = assignments.map((assignment) => {
+        const progress = student.progress[assignment.id];
+        const status = progress?.status ?? "pending";
+        const dueTime = new Date(assignment.dueDate).getTime();
+        const isOverdue = status !== "completed" && dueTime < now;
+        if (status === "completed") {
+          if (assignment.submissionType === "quiz" && progress?.total) {
+            return `${progress.score ?? 0}/${progress.total ?? 0}`;
+          }
+          return "已交";
+        }
+        return isOverdue ? "逾期" : "待交";
+      });
+      return [...base, ...assignmentCells];
+    });
+
+    const csv = [header, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/\"/g, "\"\"")}"`).join(","))
+      .join("\n");
+    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `gradebook-${data.class?.name ?? "class"}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <div className="grid" style={{ gap: 18 }}>
@@ -123,6 +177,47 @@ export default function TeacherGradebookPage() {
         <div style={{ marginTop: 10, fontSize: 12, color: "var(--ink-1)" }}>
           当前仅展示最近 {visibleAssignments.length} 份作业。更多作业可在“作业列表”查看。
         </div>
+        <div className="cta-row" style={{ marginTop: 12 }}>
+          <button className="button secondary" type="button" onClick={exportCSV}>
+            导出成绩册 CSV
+          </button>
+        </div>
+      </Card>
+
+      <Card title="成绩分布" tag="分布">
+        {data?.distribution?.length ? (
+          <div className="grid grid-2">
+            {data.distribution.map((item) => (
+              <div className="card" key={item.label}>
+                <div className="section-title">{item.label}</div>
+                <div style={{ fontSize: 20, fontWeight: 700 }}>{item.count} 人</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p>暂无分布数据。</p>
+        )}
+      </Card>
+
+      <Card title="成绩趋势" tag="趋势">
+        {data?.trend?.length ? (
+          <div className="grid" style={{ gap: 10 }}>
+            {data.trend.map((item) => (
+              <div className="card" key={item.assignmentId}>
+                <div className="section-title">{item.title}</div>
+                <div style={{ fontSize: 12, color: "var(--ink-1)" }}>
+                  截止 {new Date(item.dueDate).toLocaleDateString("zh-CN")}
+                </div>
+                <div className="pill-list" style={{ marginTop: 8 }}>
+                  <span className="pill">平均分 {item.avgScore}</span>
+                  <span className="pill">完成率 {item.completionRate}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p>暂无趋势数据。</p>
+        )}
       </Card>
 
       <Card title="成绩册" tag="作业">

@@ -6,6 +6,7 @@ import { getClassStudentIds } from "./classes";
 export type Assignment = {
   id: string;
   classId: string;
+  moduleId?: string;
   title: string;
   description?: string;
   dueDate: string;
@@ -50,6 +51,7 @@ const ASSIGNMENT_SUBMISSION_FILE = "assignment-submissions.json";
 type DbAssignment = {
   id: string;
   class_id: string;
+  module_id: string | null;
   title: string;
   description: string | null;
   due_date: string;
@@ -90,6 +92,7 @@ function mapAssignment(row: DbAssignment): Assignment {
   return {
     id: row.id,
     classId: row.class_id,
+    moduleId: row.module_id ?? undefined,
     title: row.title,
     description: row.description ?? undefined,
     dueDate: row.due_date,
@@ -355,6 +358,7 @@ export async function createAssignmentProgress(assignmentId: string, studentId: 
 
 export async function createAssignment(input: {
   classId: string;
+  moduleId?: string;
   title: string;
   description?: string;
   dueDate: string;
@@ -373,6 +377,7 @@ export async function createAssignment(input: {
     const assignment: Assignment = {
       id: `assign-${crypto.randomBytes(6).toString("hex")}`,
       classId: input.classId,
+      moduleId: input.moduleId,
       title: input.title,
       description: input.description,
       dueDate: input.dueDate,
@@ -404,12 +409,13 @@ export async function createAssignment(input: {
 
   const id = `assign-${crypto.randomBytes(6).toString("hex")}`;
   const row = await queryOne<DbAssignment>(
-    `INSERT INTO assignments (id, class_id, title, description, due_date, created_at, submission_type, max_uploads, grading_focus)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `INSERT INTO assignments (id, class_id, module_id, title, description, due_date, created_at, submission_type, max_uploads, grading_focus)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING *`,
     [
       id,
       input.classId,
+      input.moduleId ?? null,
       input.title,
       input.description ?? null,
       input.dueDate,
@@ -438,6 +444,7 @@ export async function createAssignment(input: {
     : {
         id,
         classId: input.classId,
+        moduleId: input.moduleId,
         title: input.title,
         description: input.description,
         dueDate: input.dueDate,
