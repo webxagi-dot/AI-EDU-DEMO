@@ -16,11 +16,27 @@ export async function POST(request: Request) {
   }
 
   const expectedInvite = process.env.TEACHER_INVITE_CODE?.trim();
+  const inviteList = process.env.TEACHER_INVITE_CODES?.trim();
   const teacherCount = await getTeacherCount();
   const allowWithoutInvite = !expectedInvite && teacherCount === 0;
 
-  if (expectedInvite) {
-    if (!body.inviteCode || body.inviteCode !== expectedInvite) {
+  const normalize = (code?: string) => (code ?? "").replace(/[^a-z0-9]/gi, "").toUpperCase();
+  const normalizedInput = normalize(body.inviteCode);
+  const allowed = new Set(
+    [
+      expectedInvite,
+      ...(inviteList ? inviteList.split(/[,;\s]+/) : [])
+    ]
+      .map((item) => normalize(item))
+      .filter(Boolean)
+  );
+  const requireInvite = allowed.size > 0;
+
+  if (requireInvite) {
+    if (!normalizedInput) {
+      return NextResponse.json({ error: "invite code required" }, { status: 403 });
+    }
+    if (!allowed.has(normalizedInput)) {
       return NextResponse.json({ error: "invalid invite code" }, { status: 403 });
     }
   } else if (!allowWithoutInvite) {

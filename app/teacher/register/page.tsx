@@ -75,13 +75,16 @@ export default function TeacherRegisterPage() {
             />
           </label>
           <label>
-            <div className="section-title">邀请码（可选）</div>
+            <div className="section-title">邀请码</div>
             <input
               value={inviteCode}
               onChange={(event) => setInviteCode(event.target.value)}
-              placeholder="如果设置了 TEACHER_INVITE_CODE，请填写"
+              placeholder="例如 HK-TEACH-2026（不区分大小写）"
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
             />
+            <div style={{ marginTop: 6, fontSize: 12, color: "var(--ink-1)" }}>
+              若后台配置了 TEACHER_INVITE_CODE(S)，则必须填写；支持多个邀请码。
+            </div>
           </label>
           {error ? <div style={{ color: "#b42318", fontSize: 13 }}>{error}</div> : null}
           <button className="button primary" type="submit" disabled={loading}>
@@ -89,7 +92,7 @@ export default function TeacherRegisterPage() {
           </button>
         </form>
         <div style={{ marginTop: 12, fontSize: 12, color: "var(--ink-1)" }}>
-          若已配置 TEACHER_INVITE_CODE，需要输入邀请码；否则仅当系统还没有教师时允许注册。
+          默认仅允许首位教师无需邀请码注册。配置了 TEACHER_INVITE_CODE(S) 后，必须提供邀请码。
         </div>
         <div className="pill-list" style={{ marginTop: 10 }}>
           <span className="pill">AI 组卷</span>
