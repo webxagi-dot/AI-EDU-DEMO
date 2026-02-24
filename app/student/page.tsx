@@ -166,6 +166,30 @@ export default function StudentPage() {
             开始朗读
           </Link>
         </Card>
+        <Card title="记忆曲线复习">
+          <p>按遗忘曲线自动安排复习。</p>
+          <Link className="button secondary" href="/practice?mode=review" style={{ marginTop: 12 }}>
+            开始复习
+          </Link>
+        </Card>
+        <Card title="学习画像">
+          <p>查看能力雷达与掌握度。</p>
+          <Link className="button secondary" href="/student/portrait" style={{ marginTop: 12 }}>
+            查看画像
+          </Link>
+        </Card>
+        <Card title="写作批改">
+          <p>作文/英语写作结构语法词汇批改。</p>
+          <Link className="button secondary" href="/writing" style={{ marginTop: 12 }}>
+            进入批改
+          </Link>
+        </Card>
+        <Card title="挑战任务">
+          <p>闯关挑战，解锁奖励。</p>
+          <Link className="button secondary" href="/challenge" style={{ marginTop: 12 }}>
+            进入挑战
+          </Link>
+        </Card>
         <Card title="错题本">
           <p>查看错因与复习节奏。</p>
           <Link className="button secondary" href="/wrong-book" style={{ marginTop: 12 }}>

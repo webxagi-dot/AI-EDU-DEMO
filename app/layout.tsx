@@ -24,6 +24,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/coach">学习陪练</Link>
               <Link href="/practice">练习</Link>
               <Link href="/reading">朗读评分</Link>
+              <Link href="/writing">写作批改</Link>
+              <Link href="/challenge">挑战任务</Link>
               <Link href="/parent">家长端</Link>
               <Link href="/admin">管理端</Link>
             </nav>

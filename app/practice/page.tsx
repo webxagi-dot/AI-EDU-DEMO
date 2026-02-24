@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Card from "@/components/Card";
 
 type Question = {
@@ -25,11 +26,12 @@ type Variant = {
 };
 
 export default function PracticePage() {
+  const searchParams = useSearchParams();
   const [subject, setSubject] = useState("math");
   const [grade, setGrade] = useState("4");
   const [knowledgePoints, setKnowledgePoints] = useState<KnowledgePoint[]>([]);
   const [knowledgePointId, setKnowledgePointId] = useState<string | undefined>(undefined);
-  const [mode, setMode] = useState<"normal" | "challenge" | "timed" | "wrong" | "adaptive">("normal");
+  const [mode, setMode] = useState<"normal" | "challenge" | "timed" | "wrong" | "adaptive" | "review">("normal");
   const [question, setQuestion] = useState<Question | null>(null);
   const [answer, setAnswer] = useState("");
   const [result, setResult] = useState<{ correct: boolean; explanation: string; answer: string } | null>(null);
@@ -48,6 +50,14 @@ export default function PracticePage() {
       .then((res) => res.json())
       .then((data) => setKnowledgePoints(data.data ?? []));
   }, []);
+
+  useEffect(() => {
+    const next = searchParams.get("mode");
+    if (!next) return;
+    if (["normal", "challenge", "timed", "wrong", "adaptive", "review"].includes(next)) {
+      setMode(next as typeof mode);
+    }
+  }, [searchParams]);
 
   async function loadQuestion() {
     if (mode === "timed" && timeLeft === 0) {
@@ -168,7 +178,7 @@ export default function PracticePage() {
             <select
               value={mode}
               onChange={(event) => {
-                const next = event.target.value as "normal" | "challenge" | "timed" | "wrong" | "adaptive";
+                const next = event.target.value as "normal" | "challenge" | "timed" | "wrong" | "adaptive" | "review";
                 setMode(next);
                 setResult(null);
                 setQuestion(null);
@@ -187,6 +197,7 @@ export default function PracticePage() {
               <option value="timed">限时模式</option>
               <option value="wrong">错题专练</option>
               <option value="adaptive">自适应推荐</option>
+              <option value="review">记忆复习</option>
             </select>
           </label>
           <label>

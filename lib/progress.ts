@@ -3,6 +3,7 @@ import { readJson, writeJson } from "./storage";
 import { getKnowledgePoints, getQuestions } from "./content";
 import type { Question } from "./types";
 import { isDbEnabled, query, queryOne } from "./db";
+import { updateMemorySchedule } from "./memory";
 import { getReviewItemsByStudent } from "./reviews";
 
 export type QuestionAttempt = {
@@ -94,6 +95,11 @@ export async function addAttempt(attempt: QuestionAttempt) {
     const list = await getAttempts();
     list.push(attempt);
     await saveAttempts(list);
+    await updateMemorySchedule({
+      userId: attempt.userId,
+      questionId: attempt.questionId,
+      correct: attempt.correct
+    });
     return;
   }
   await query(
@@ -112,6 +118,11 @@ export async function addAttempt(attempt: QuestionAttempt) {
       attempt.createdAt
     ]
   );
+  await updateMemorySchedule({
+    userId: attempt.userId,
+    questionId: attempt.questionId,
+    correct: attempt.correct
+  });
 }
 
 export async function getAttemptsByUser(userId: string) {

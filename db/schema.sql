@@ -109,6 +109,45 @@ CREATE TABLE IF NOT EXISTS correction_tasks (
 CREATE INDEX IF NOT EXISTS correction_tasks_user_idx ON correction_tasks (user_id);
 CREATE INDEX IF NOT EXISTS correction_tasks_due_idx ON correction_tasks (due_date);
 
+CREATE TABLE IF NOT EXISTS memory_reviews (
+  id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  question_id TEXT REFERENCES questions(id) ON DELETE CASCADE,
+  stage INT NOT NULL DEFAULT 0,
+  next_review_at TIMESTAMPTZ NOT NULL,
+  last_reviewed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL,
+  UNIQUE (user_id, question_id)
+);
+
+CREATE INDEX IF NOT EXISTS memory_reviews_user_idx ON memory_reviews (user_id);
+CREATE INDEX IF NOT EXISTS memory_reviews_due_idx ON memory_reviews (next_review_at);
+
+CREATE TABLE IF NOT EXISTS writing_submissions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  subject TEXT NOT NULL,
+  grade TEXT NOT NULL,
+  title TEXT,
+  content TEXT NOT NULL,
+  feedback JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS writing_submissions_user_idx ON writing_submissions (user_id);
+
+CREATE TABLE IF NOT EXISTS challenge_claims (
+  id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  task_id TEXT NOT NULL,
+  points INT NOT NULL,
+  claimed_at TIMESTAMPTZ NOT NULL,
+  UNIQUE (user_id, task_id)
+);
+
+CREATE INDEX IF NOT EXISTS challenge_claims_user_idx ON challenge_claims (user_id);
+
 CREATE TABLE IF NOT EXISTS classes (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,

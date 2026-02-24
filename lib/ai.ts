@@ -50,6 +50,18 @@ export type WrongExplanation = {
   hints: string[];
 };
 
+export type WritingFeedback = {
+  scores: {
+    structure: number;
+    grammar: number;
+    vocab: number;
+  };
+  summary: string;
+  strengths: string[];
+  improvements: string[];
+  corrected?: string;
+};
+
 export type GenerateKnowledgePointsPayload = {
   subject: string;
   grade: string;
@@ -318,6 +330,64 @@ export async function generateVariantDrafts(payload: {
   });
 
   return drafts.length ? drafts.slice(0, count) : null;
+}
+
+export async function generateWritingFeedback(payload: {
+  subject: string;
+  grade: string;
+  title?: string;
+  content: string;
+}) {
+  const provider = process.env.LLM_PROVIDER ?? "mock";
+  if (provider === "mock") return null;
+
+  const context = [`学科：${payload.subject}`, `年级：${payload.grade}`, payload.title ? `题目：${payload.title}` : ""]
+    .filter(Boolean)
+    .join("\n");
+
+  const userPrompt = `${context}\n写作内容：${payload.content}\n请给出结构、语法、词汇三个维度的评分（0-100），并提供简短总结、优点、改进建议。返回 JSON：{\"scores\":{\"structure\":80,\"grammar\":78,\"vocab\":75},\"summary\":\"...\",\"strengths\":[\"...\"],\"improvements\":[\"...\"],\"corrected\":\"...\"}。不要输出多余文本。`;
+
+  let text: string | null = null;
+  if (provider === "zhipu" || provider === "compatible") {
+    text = await callZhipuLLM([
+      { role: "system", content: GENERATE_PROMPT },
+      { role: "user", content: userPrompt }
+    ]);
+  } else if (provider === "custom") {
+    text = await callCustomLLM(`${GENERATE_PROMPT}\n${userPrompt}`);
+  }
+
+  if (!text) return null;
+  const parsed = extractJson(text);
+  if (!parsed || typeof parsed !== "object") return null;
+
+  const scores = (parsed as any).scores ?? {};
+  const normalizeScore = (value: any) => {
+    const num = Number(value);
+    if (Number.isNaN(num)) return 0;
+    return Math.max(0, Math.min(100, Math.round(num)));
+  };
+
+  const summary = String((parsed as any).summary ?? "").trim();
+  const strengths = Array.isArray((parsed as any).strengths)
+    ? (parsed as any).strengths.map((item: any) => String(item).trim()).filter(Boolean)
+    : [];
+  const improvements = Array.isArray((parsed as any).improvements)
+    ? (parsed as any).improvements.map((item: any) => String(item).trim()).filter(Boolean)
+    : [];
+  const corrected = String((parsed as any).corrected ?? "").trim();
+
+  return {
+    scores: {
+      structure: normalizeScore(scores.structure),
+      grammar: normalizeScore(scores.grammar),
+      vocab: normalizeScore(scores.vocab)
+    },
+    summary: summary || "已完成基础批改，请参考评分与建议进行修改。",
+    strengths: strengths.slice(0, 3),
+    improvements: improvements.slice(0, 3),
+    corrected: corrected || undefined
+  } as WritingFeedback;
 }
 
 export async function generateKnowledgePointsDraft(payload: GenerateKnowledgePointsPayload) {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getAdaptiveQuestions, getPracticeQuestions, getWrongQuestionIds } from "@/lib/progress";
+import { getDueReviewQuestions } from "@/lib/memory";
 import { getQuestions } from "@/lib/content";
 import { getStudentProfile } from "@/lib/profiles";
 export const dynamic = "force-dynamic";
@@ -38,6 +39,14 @@ export async function POST(request: Request) {
       subject,
       grade,
       knowledgePointId: body.knowledgePointId
+    });
+  }
+  if (body.mode === "review") {
+    questions = await getDueReviewQuestions({
+      userId: user.id,
+      subject,
+      grade,
+      limit: 10
     });
   }
   const question = questions[Math.floor(Math.random() * questions.length)];
