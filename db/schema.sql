@@ -214,6 +214,7 @@ CREATE INDEX IF NOT EXISTS assignments_class_idx ON assignments (class_id);
 CREATE INDEX IF NOT EXISTS assignment_items_assignment_idx ON assignment_items (assignment_id);
 CREATE INDEX IF NOT EXISTS assignment_progress_assignment_idx ON assignment_progress (assignment_id);
 CREATE INDEX IF NOT EXISTS assignment_progress_student_idx ON assignment_progress (student_id);
+CREATE UNIQUE INDEX IF NOT EXISTS assignment_progress_unique_idx ON assignment_progress (assignment_id, student_id);
 CREATE INDEX IF NOT EXISTS assignment_submissions_assignment_idx ON assignment_submissions (assignment_id);
 CREATE INDEX IF NOT EXISTS assignment_submissions_student_idx ON assignment_submissions (student_id);
 CREATE INDEX IF NOT EXISTS assignment_reviews_assignment_idx ON assignment_reviews (assignment_id);

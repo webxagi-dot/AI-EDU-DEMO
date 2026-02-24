@@ -163,3 +163,23 @@ export async function saveReview(input: {
 
   return { review: mapReview(reviewRow), items: items.map(mapReviewItem) };
 }
+
+export async function getReviewItemsByStudent(studentId: string): Promise<AssignmentReviewItem[]> {
+  if (!isDbEnabled()) {
+    const reviews = readJson<AssignmentReview[]>(REVIEW_FILE, []);
+    const reviewIds = reviews.filter((item) => item.studentId === studentId).map((item) => item.id);
+    if (!reviewIds.length) return [];
+    const items = readJson<AssignmentReviewItem[]>(REVIEW_ITEM_FILE, []);
+    const set = new Set(reviewIds);
+    return items.filter((item) => set.has(item.reviewId));
+  }
+
+  const rows = await query<DbReviewItem>(
+    `SELECT ari.*
+     FROM assignment_review_items ari
+     JOIN assignment_reviews ar ON ar.id = ari.review_id
+     WHERE ar.student_id = $1`,
+    [studentId]
+  );
+  return rows.map(mapReviewItem);
+}

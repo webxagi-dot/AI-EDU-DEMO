@@ -17,12 +17,19 @@ type KnowledgePoint = {
   title: string;
 };
 
+type Variant = {
+  stem: string;
+  options: string[];
+  answer: string;
+  explanation: string;
+};
+
 export default function PracticePage() {
   const [subject, setSubject] = useState("math");
   const [grade, setGrade] = useState("4");
   const [knowledgePoints, setKnowledgePoints] = useState<KnowledgePoint[]>([]);
   const [knowledgePointId, setKnowledgePointId] = useState<string | undefined>(undefined);
-  const [mode, setMode] = useState<"normal" | "challenge" | "timed" | "wrong">("normal");
+  const [mode, setMode] = useState<"normal" | "challenge" | "timed" | "wrong" | "adaptive">("normal");
   const [question, setQuestion] = useState<Question | null>(null);
   const [answer, setAnswer] = useState("");
   const [result, setResult] = useState<{ correct: boolean; explanation: string; answer: string } | null>(null);
@@ -31,6 +38,10 @@ export default function PracticePage() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [variantPack, setVariantPack] = useState<{ analysis: string; hints: string[]; variants: Variant[] } | null>(null);
+  const [variantAnswers, setVariantAnswers] = useState<Record<number, string>>({});
+  const [variantResults, setVariantResults] = useState<Record<number, boolean | null>>({});
+  const [loadingVariants, setLoadingVariants] = useState(false);
 
   useEffect(() => {
     fetch("/api/knowledge-points")
@@ -58,6 +69,9 @@ export default function PracticePage() {
     setQuestion(data.question ?? null);
     setAnswer("");
     setResult(null);
+    setVariantPack(null);
+    setVariantAnswers({});
+    setVariantResults({});
   }
 
   async function submitAnswer() {
@@ -73,6 +87,27 @@ export default function PracticePage() {
       setChallengeCount((prev) => prev + 1);
       setChallengeCorrect((prev) => prev + (data.correct ? 1 : 0));
     }
+  }
+
+  async function loadVariants() {
+    if (!question) return;
+    setLoadingVariants(true);
+    const res = await fetch("/api/practice/variants", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ questionId: question.id, studentAnswer: answer })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setVariantPack({
+        analysis: data?.data?.explanation?.analysis ?? "",
+        hints: data?.data?.explanation?.hints ?? [],
+        variants: data?.data?.variants ?? []
+      });
+      setVariantAnswers({});
+      setVariantResults({});
+    }
+    setLoadingVariants(false);
   }
 
   const filtered = knowledgePoints.filter((kp) => kp.subject === subject && kp.grade === grade);
@@ -133,13 +168,16 @@ export default function PracticePage() {
             <select
               value={mode}
               onChange={(event) => {
-                const next = event.target.value as "normal" | "challenge" | "timed" | "wrong";
+                const next = event.target.value as "normal" | "challenge" | "timed" | "wrong" | "adaptive";
                 setMode(next);
                 setResult(null);
                 setQuestion(null);
                 setAnswer("");
                 setTimeLeft(0);
                 setTimerRunning(false);
+                setVariantPack(null);
+                setVariantAnswers({});
+                setVariantResults({});
                 resetChallenge();
               }}
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
@@ -148,6 +186,7 @@ export default function PracticePage() {
               <option value="challenge">闯关模式</option>
               <option value="timed">限时模式</option>
               <option value="wrong">错题专练</option>
+              <option value="adaptive">自适应推荐</option>
             </select>
           </label>
           <label>
@@ -215,6 +254,82 @@ export default function PracticePage() {
           <div className="badge">{result.correct ? "回答正确" : "回答错误"}</div>
           <p style={{ marginTop: 8 }}>正确答案：{result.answer}</p>
           <p>{result.explanation}</p>
+          <div className="cta-row" style={{ marginTop: 12 }}>
+            <button className="button secondary" onClick={loadVariants}>
+              {loadingVariants ? "生成中..." : "AI 错题讲解 + 变式训练"}
+            </button>
+          </div>
+        </Card>
+      ) : null}
+
+      {variantPack ? (
+        <Card title="错题讲解">
+          <p>{variantPack.analysis}</p>
+          {variantPack.hints?.length ? (
+            <div className="grid" style={{ gap: 6, marginTop: 10 }}>
+              <div className="badge">提示</div>
+              {variantPack.hints.map((hint) => (
+                <div key={hint}>{hint}</div>
+              ))}
+            </div>
+          ) : null}
+        </Card>
+      ) : null}
+
+      {variantPack?.variants?.length ? (
+        <Card title="变式训练">
+          <div className="grid" style={{ gap: 12 }}>
+            {variantPack.variants.map((variant, index) => {
+              const selected = variantAnswers[index];
+              const checked = variantResults[index];
+              return (
+                <div className="card" key={`${variant.stem}-${index}`}>
+                  <div className="section-title">变式题 {index + 1}</div>
+                  <p>{variant.stem}</p>
+                  <div className="grid" style={{ gap: 8, marginTop: 10 }}>
+                    {variant.options.map((option) => (
+                      <label className="card" key={option} style={{ cursor: "pointer" }}>
+                        <input
+                          type="radio"
+                          name={`variant-${index}`}
+                          checked={selected === option}
+                          onChange={() =>
+                            setVariantAnswers((prev) => ({
+                              ...prev,
+                              [index]: option
+                            }))
+                          }
+                          style={{ marginRight: 8 }}
+                        />
+                        {option}
+                      </label>
+                    ))}
+                  </div>
+                  <div className="cta-row" style={{ marginTop: 10 }}>
+                    <button
+                      className="button primary"
+                      onClick={() =>
+                        setVariantResults((prev) => ({
+                          ...prev,
+                          [index]: selected === variant.answer
+                        }))
+                      }
+                      disabled={!selected}
+                    >
+                      提交本题
+                    </button>
+                  </div>
+                  {checked !== undefined && checked !== null ? (
+                    <div style={{ marginTop: 8, fontSize: 13 }}>
+                      {checked ? "回答正确" : "回答错误"}
+                      <div>正确答案：{variant.answer}</div>
+                      <div>{variant.explanation}</div>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
         </Card>
       ) : null}
 

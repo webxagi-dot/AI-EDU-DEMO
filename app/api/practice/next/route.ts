@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { getPracticeQuestions, getWrongQuestionIds } from "@/lib/progress";
+import { getAdaptiveQuestions, getPracticeQuestions, getWrongQuestionIds } from "@/lib/progress";
 import { getQuestions } from "@/lib/content";
 import { getStudentProfile } from "@/lib/profiles";
 export const dynamic = "force-dynamic";
@@ -31,6 +31,14 @@ export async function POST(request: Request) {
         (!body.grade || q.grade === grade) &&
         (!body.knowledgePointId || q.knowledgePointId === body.knowledgePointId)
     );
+  }
+  if (body.mode === "adaptive") {
+    questions = await getAdaptiveQuestions({
+      userId: user.id,
+      subject,
+      grade,
+      knowledgePointId: body.knowledgePointId
+    });
   }
   const question = questions[Math.floor(Math.random() * questions.length)];
 

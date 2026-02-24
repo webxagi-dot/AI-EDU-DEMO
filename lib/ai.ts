@@ -45,6 +45,11 @@ export type GenerateQuestionPayload = {
   questionType?: string;
 };
 
+export type WrongExplanation = {
+  analysis: string;
+  hints: string[];
+};
+
 export type GenerateKnowledgePointsPayload = {
   subject: string;
   grade: string;
@@ -221,6 +226,98 @@ export async function generateQuestionDraft(payload: GenerateQuestionPayload) {
   if (!text) return null;
   const parsed = extractJson(text);
   return normalizeDraft(parsed);
+}
+
+export async function generateWrongExplanation(payload: {
+  subject: string;
+  grade: string;
+  question: string;
+  studentAnswer: string;
+  correctAnswer: string;
+  explanation?: string;
+  knowledgePointTitle?: string;
+}) {
+  const provider = process.env.LLM_PROVIDER ?? "mock";
+  if (provider === "mock") return null;
+
+  const context = [
+    `学科：${payload.subject}`,
+    `年级：${payload.grade}`,
+    payload.knowledgePointTitle ? `知识点：${payload.knowledgePointTitle}` : ""
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const userPrompt = `${context}\n题目：${payload.question}\n学生答案：${payload.studentAnswer}\n正确答案：${payload.correctAnswer}\n已有解析：${payload.explanation ?? ""}\n请指出学生可能的错误原因，并用简洁语言给出纠正讲解与 2-3 条提示。返回 JSON：{\"analysis\":\"...\",\"hints\":[\"...\",\"...\"]}。不要输出多余文本。`;
+
+  let text: string | null = null;
+  if (provider === "zhipu" || provider === "compatible") {
+    text = await callZhipuLLM([
+      { role: "system", content: GENERATE_PROMPT },
+      { role: "user", content: userPrompt }
+    ]);
+  } else if (provider === "custom") {
+    text = await callCustomLLM(`${GENERATE_PROMPT}\n${userPrompt}`);
+  }
+
+  if (!text) return null;
+  const parsed = extractJson(text);
+  if (!parsed || typeof parsed !== "object") return null;
+  const analysis = String((parsed as any).analysis ?? "").trim();
+  const hintsRaw = Array.isArray((parsed as any).hints) ? (parsed as any).hints : [];
+  const hints = hintsRaw.map((item: any) => String(item).trim()).filter(Boolean);
+  if (!analysis) return null;
+  return { analysis, hints: hints.slice(0, 3) };
+}
+
+export async function generateVariantDrafts(payload: {
+  subject: string;
+  grade: string;
+  knowledgePointTitle: string;
+  chapter?: string;
+  seedQuestion: string;
+  count?: number;
+  difficulty?: "easy" | "medium" | "hard";
+}) {
+  const provider = process.env.LLM_PROVIDER ?? "mock";
+  if (provider === "mock") return null;
+
+  const count = Math.min(Math.max(Number(payload.count) || 2, 1), 4);
+  const context = [
+    `学科：${payload.subject}`,
+    `年级：${payload.grade}`,
+    `知识点：${payload.knowledgePointTitle}`,
+    payload.chapter ? `章节：${payload.chapter}` : "",
+    payload.difficulty ? `难度：${payload.difficulty}` : ""
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const userPrompt = `${context}\n参考题目：${payload.seedQuestion}\n请生成 ${count} 道同类型变式选择题，返回 JSON：{\"items\":[{\"stem\":\"...\",\"options\":[\"...\"],\"answer\":\"...\",\"explanation\":\"...\"}]}。要求选项为 4 个，答案必须等于某个选项文本，不要附加 A/B/C/D。不要输出多余文本。`;
+
+  let text: string | null = null;
+  if (provider === "zhipu" || provider === "compatible") {
+    text = await callZhipuLLM([
+      { role: "system", content: GENERATE_PROMPT },
+      { role: "user", content: userPrompt }
+    ]);
+  } else if (provider === "custom") {
+    text = await callCustomLLM(`${GENERATE_PROMPT}\n${userPrompt}`);
+  }
+
+  if (!text) return null;
+  const parsed = extractJson(text);
+  if (!parsed) return null;
+  const rawItems = Array.isArray((parsed as any).items) ? (parsed as any).items : Array.isArray(parsed) ? parsed : [];
+  if (!rawItems.length) return null;
+
+  const drafts: QuestionDraft[] = [];
+  rawItems.forEach((item: any) => {
+    const draft = normalizeDraft(item);
+    if (draft) drafts.push(draft);
+  });
+
+  return drafts.length ? drafts.slice(0, count) : null;
 }
 
 export async function generateKnowledgePointsDraft(payload: GenerateKnowledgePointsPayload) {

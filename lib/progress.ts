@@ -3,6 +3,7 @@ import { readJson, writeJson } from "./storage";
 import { getKnowledgePoints, getQuestions } from "./content";
 import type { Question } from "./types";
 import { isDbEnabled, query, queryOne } from "./db";
+import { getReviewItemsByStudent } from "./reviews";
 
 export type QuestionAttempt = {
   id: string;
@@ -226,6 +227,70 @@ export async function generateStudyPlan(userId: string, subject: string): Promis
   return { ...plan, id: planId };
 }
 
+export async function refreshStudyPlan(userId: string, subject: string): Promise<StudyPlan> {
+  const knowledgePoints = (await getKnowledgePoints()).filter((kp) => kp.subject === subject);
+  const mastery = await getMasteryByKnowledgePoint(userId, subject);
+  const ranked = knowledgePoints
+    .map((kp) => {
+      const stat = mastery.get(kp.id) ?? { correct: 0, total: 0 };
+      const ratio = stat.total === 0 ? 0 : stat.correct / stat.total;
+      return { kp, ratio, total: stat.total };
+    })
+    .sort((a, b) => {
+      if (a.ratio === b.ratio) return a.total - b.total;
+      return a.ratio - b.ratio;
+    })
+    .slice(0, 5);
+
+  const items: StudyPlanItem[] = ranked.map((item, index) => ({
+    knowledgePointId: item.kp.id,
+    targetCount: item.ratio >= 0.85 && item.total >= 4 ? 3 : 5,
+    dueDate: new Date(Date.now() + index * 24 * 60 * 60 * 1000).toISOString()
+  }));
+
+  const plan: StudyPlan = {
+    userId,
+    subject,
+    createdAt: new Date().toISOString(),
+    items
+  };
+
+  if (!isDbEnabled()) {
+    const plans = readJson<StudyPlan[]>(PLANS_FILE, []);
+    const nextPlans = plans.filter((p) => !(p.userId === userId && p.subject === subject));
+    nextPlans.push(plan);
+    writeJson(PLANS_FILE, nextPlans);
+    return plan;
+  }
+
+  const planId = `plan-${crypto.randomBytes(6).toString("hex")}`;
+  await query(
+    "DELETE FROM study_plan_items WHERE plan_id IN (SELECT id FROM study_plans WHERE user_id = $1 AND subject = $2)",
+    [userId, subject]
+  );
+  await query("DELETE FROM study_plans WHERE user_id = $1 AND subject = $2", [userId, subject]);
+  await query(
+    "INSERT INTO study_plans (id, user_id, subject, created_at) VALUES ($1, $2, $3, $4)",
+    [planId, userId, subject, plan.createdAt]
+  );
+
+  for (const item of items) {
+    await query(
+      `INSERT INTO study_plan_items (id, plan_id, knowledge_point_id, target_count, due_date)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        `item-${crypto.randomBytes(6).toString("hex")}`,
+        planId,
+        item.knowledgePointId,
+        item.targetCount,
+        item.dueDate
+      ]
+    );
+  }
+
+  return { ...plan, id: planId };
+}
+
 export async function getStudyPlan(userId: string, subject: string) {
   if (!isDbEnabled()) {
     const plans = readJson<StudyPlan[]>(PLANS_FILE, []);
@@ -303,6 +368,57 @@ export async function getPracticeQuestions(subject: string, grade: string, knowl
     return questions.filter((q) => q.knowledgePointId === knowledgePointId);
   }
   return questions;
+}
+
+export async function getAdaptiveQuestions(params: {
+  userId: string;
+  subject: string;
+  grade: string;
+  knowledgePointId?: string;
+}) {
+  const { userId, subject, grade, knowledgePointId } = params;
+  const questions = await getPracticeQuestions(subject, grade, knowledgePointId);
+  if (knowledgePointId) return questions;
+
+  const mastery = await getMasteryByKnowledgePoint(userId, subject);
+  const reviewItems = await getReviewItemsByStudent(userId);
+  const questionMap = new Map<string, Question>();
+  questions.forEach((q) => questionMap.set(q.id, q));
+
+  const wrongTagCounts = new Map<string, number>();
+  reviewItems.forEach((item) => {
+    const question = questionMap.get(item.questionId);
+    if (!question) return;
+    const current = wrongTagCounts.get(question.knowledgePointId) ?? 0;
+    wrongTagCounts.set(question.knowledgePointId, current + 1);
+  });
+
+  const scoreByKp = new Map<string, number>();
+  const totalsByKp = new Map<string, number>();
+  questions.forEach((q) => {
+    const stat = mastery.get(q.knowledgePointId) ?? { correct: 0, total: 0 };
+    const ratio = stat.total === 0 ? 0 : stat.correct / stat.total;
+    const wrongCount = wrongTagCounts.get(q.knowledgePointId) ?? 0;
+    const coldStartBoost = stat.total === 0 ? 0.35 : 0;
+    const wrongBoost = Math.min(0.6, wrongCount * 0.15);
+    const score = (1 - ratio) + wrongBoost + coldStartBoost;
+    if (!scoreByKp.has(q.knowledgePointId)) {
+      scoreByKp.set(q.knowledgePointId, score);
+      totalsByKp.set(q.knowledgePointId, stat.total);
+    }
+  });
+
+  const ranked = Array.from(scoreByKp.entries())
+    .map(([kpId, score]) => ({ kpId, score, total: totalsByKp.get(kpId) ?? 0 }))
+    .sort((a, b) => {
+      if (a.score === b.score) return a.total - b.total;
+      return b.score - a.score;
+    })
+    .slice(0, 4)
+    .map((item) => item.kpId);
+
+  if (!ranked.length) return questions;
+  return questions.filter((q) => ranked.includes(q.knowledgePointId));
 }
 
 function shuffle<T>(items: T[]) {

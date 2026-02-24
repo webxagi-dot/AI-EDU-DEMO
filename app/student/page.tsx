@@ -23,6 +23,7 @@ export default function StudentPage() {
   const [joinCode, setJoinCode] = useState("");
   const [joinMessage, setJoinMessage] = useState<string | null>(null);
   const [joinRequests, setJoinRequests] = useState<any[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetch("/api/plan")
@@ -55,6 +56,21 @@ export default function StudentPage() {
       .then((payload) => setJoinRequests(payload.data ?? []));
   }
 
+  async function refreshPlan() {
+    setRefreshing(true);
+    const res = await fetch("/api/plan/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subject: "all" })
+    });
+    const data = await res.json();
+    const items = data?.data?.items ?? data?.data?.plan?.items ?? [];
+    if (Array.isArray(items)) {
+      setPlan(items);
+    }
+    setRefreshing(false);
+  }
+
   return (
     <div className="grid" style={{ gap: 18 }}>
       <Card title="今日任务">
@@ -70,6 +86,11 @@ export default function StudentPage() {
             ))}
           </ul>
         )}
+        <div className="cta-row" style={{ marginTop: 12 }}>
+          <button className="button secondary" onClick={refreshPlan}>
+            {refreshing ? "刷新中..." : "刷新学习计划"}
+          </button>
+        </div>
       </Card>
 
       <Card title="学习激励">
@@ -131,6 +152,18 @@ export default function StudentPage() {
           <p>逐步提示和引导式讲解。</p>
           <Link className="button secondary" href="/tutor" style={{ marginTop: 12 }}>
             打开辅导
+          </Link>
+        </Card>
+        <Card title="学习陪练">
+          <p>分步提示 + 卡点追问。</p>
+          <Link className="button secondary" href="/coach" style={{ marginTop: 12 }}>
+            进入陪练
+          </Link>
+        </Card>
+        <Card title="朗读评分">
+          <p>语文/英语朗读跟读评分。</p>
+          <Link className="button secondary" href="/reading" style={{ marginTop: 12 }}>
+            开始朗读
           </Link>
         </Card>
         <Card title="错题本">
