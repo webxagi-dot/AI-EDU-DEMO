@@ -110,13 +110,16 @@ export async function POST(request: Request) {
   const difficulty = body.difficulty;
 
   let questionIds: string[] = [];
+  let fallbackMode: "bank" | null = null;
 
   if (submissionType === "quiz" && mode === "ai") {
     const provider = process.env.LLM_PROVIDER ?? "mock";
     if (provider === "mock") {
-      return NextResponse.json({ error: "请先配置 AI 模型" }, { status: 400 });
+      fallbackMode = "bank";
     }
+  }
 
+  if (submissionType === "quiz" && mode === "ai" && !fallbackMode) {
     const knowledgePoints = await getKnowledgePoints();
     const subjectPoints = knowledgePoints.filter(
       (item) => item.subject === klass.subject && item.grade === klass.grade
@@ -202,7 +205,11 @@ export async function POST(request: Request) {
     }
 
     if (pool.length < questionCount) {
-      return NextResponse.json({ error: "题库数量不足" }, { status: 400 });
+      const hint =
+        fallbackMode === "bank"
+          ? "AI 未配置且题库数量不足，请先导入题库或配置模型"
+          : "题库数量不足";
+      return NextResponse.json({ error: hint }, { status: 400 });
     }
 
     const selected = sampleQuestions(pool, questionCount);
@@ -239,5 +246,9 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({ data: assignment });
+  return NextResponse.json({
+    data: assignment,
+    fallback: fallbackMode,
+    message: fallbackMode === "bank" ? "AI 未配置，已自动改为题库抽题" : undefined
+  });
 }

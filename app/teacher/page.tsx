@@ -204,8 +204,9 @@ export default function TeacherPage() {
       setLoading(false);
       return;
     }
-    setMessage("作业发布成功。");
-    setAssignmentMessage("作业发布成功。");
+    const nextMessage = data?.message ?? "作业发布成功。";
+    setMessage(nextMessage);
+    setAssignmentMessage(nextMessage);
     setAssignmentForm((prev) => ({ ...prev, title: "", description: "", gradingFocus: "" }));
     await loadAll();
     setLoading(false);
