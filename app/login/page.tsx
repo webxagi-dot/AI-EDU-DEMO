@@ -6,10 +6,25 @@ import Card from "@/components/Card";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [role, setRole] = useState<"student" | "teacher" | "parent" | "admin">("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const roleOptions = [
+    { value: "student" as const, label: "学生", desc: "学习/练习/作业" },
+    { value: "teacher" as const, label: "教师", desc: "作业发布/批改/分析" },
+    { value: "parent" as const, label: "家长", desc: "周报/监督/提醒" },
+    { value: "admin" as const, label: "管理员", desc: "题库/知识点/日志" }
+  ];
+
+  const placeholderMap: Record<typeof role, string> = {
+    student: "student@demo.com",
+    teacher: "teacher@demo.com",
+    parent: "parent@demo.com",
+    admin: "admin@demo.com"
+  };
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -19,7 +34,7 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, role })
       });
       const data = await res.json();
       if (!res.ok) {
@@ -52,12 +67,28 @@ export default function LoginPage() {
       </div>
       <Card title="登录" tag="入口">
         <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12 }}>
+          <div>
+            <div className="section-title">选择身份</div>
+            <div className="role-grid">
+              {roleOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`role-card${role === option.value ? " active" : ""}`}
+                  onClick={() => setRole(option.value)}
+                >
+                  <div className="role-title">{option.label}</div>
+                  <div className="role-desc">{option.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
           <label>
             <div className="section-title">邮箱</div>
             <input
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="student@demo.com"
+              placeholder={placeholderMap[role]}
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
             />
           </label>
@@ -77,7 +108,7 @@ export default function LoginPage() {
           </button>
         </form>
         <div style={{ marginTop: 12, fontSize: 13, color: "var(--ink-1)" }}>
-          演示账号：student@demo.com / Student123
+          演示账号：student@demo.com / Student123（可切换身份后登录）
         </div>
         <div className="pill-list" style={{ marginTop: 12 }}>
           <span className="pill">学生注册</span>
