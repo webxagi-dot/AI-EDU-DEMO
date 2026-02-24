@@ -5,6 +5,7 @@ import { getAssignmentById, getAssignmentItems, getAssignmentSubmission } from "
 import { getQuestions } from "@/lib/content";
 import { getReview } from "@/lib/reviews";
 import { getAssignmentAIReview } from "@/lib/assignment-ai";
+import { getAssignmentRubrics, getReviewRubrics } from "@/lib/rubrics";
 
 export const dynamic = "force-dynamic";
 
@@ -50,12 +51,16 @@ export async function GET(_: Request, context: { params: { id: string } }) {
 
   const reviewResult = await getReview(assignment.id, user.id);
   const aiReview = await getAssignmentAIReview(assignment.id, user.id);
+  const rubrics = await getAssignmentRubrics(assignment.id);
+  const reviewRubrics = reviewResult.review ? await getReviewRubrics(reviewResult.review.id) : [];
   return NextResponse.json({
     assignment,
     submission,
     questions: details,
     review: reviewResult.review,
     reviewItems: reviewResult.items,
-    aiReview
+    aiReview,
+    rubrics,
+    reviewRubrics
   });
 }

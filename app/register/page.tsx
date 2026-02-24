@@ -12,6 +12,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [grade, setGrade] = useState("4");
   const [studentEmail, setStudentEmail] = useState("");
+  const [observerCode, setObserverCode] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -24,7 +25,10 @@ export default function RegisterPage() {
 
     const payload: any = { role, name, email, password };
     if (role === "student") payload.grade = grade;
-    if (role === "parent") payload.studentEmail = studentEmail;
+    if (role === "parent") {
+      payload.observerCode = observerCode;
+      payload.studentEmail = studentEmail;
+    }
 
     const res = await fetch("/api/auth/register", {
       method: "POST",
@@ -40,6 +44,7 @@ export default function RegisterPage() {
       setEmail("");
       setPassword("");
       setStudentEmail("");
+      setObserverCode("");
     }
     setLoading(false);
   }
@@ -107,15 +112,26 @@ export default function RegisterPage() {
               </select>
             </label>
           ) : (
-            <label>
-              <div className="section-title">绑定学生邮箱</div>
-              <input
-                value={studentEmail}
-                onChange={(event) => setStudentEmail(event.target.value)}
-                placeholder="student@demo.com"
-                style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
-              />
-            </label>
+            <>
+              <label>
+                <div className="section-title">绑定码（推荐）</div>
+                <input
+                  value={observerCode}
+                  onChange={(event) => setObserverCode(event.target.value)}
+                  placeholder="学生资料页获取绑定码"
+                  style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+                />
+              </label>
+              <label>
+                <div className="section-title">绑定学生邮箱（可选）</div>
+                <input
+                  value={studentEmail}
+                  onChange={(event) => setStudentEmail(event.target.value)}
+                  placeholder="student@demo.com"
+                  style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+                />
+              </label>
+            </>
           )}
 
           {error ? <div style={{ color: "#b42318", fontSize: 13 }}>{error}</div> : null}

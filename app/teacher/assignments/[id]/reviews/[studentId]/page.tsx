@@ -32,6 +32,8 @@ type ReviewPayload = {
   }>;
   review: { overallComment?: string } | null;
   reviewItems: Array<{ questionId: string; wrongTag?: string; comment?: string }>;
+  rubrics: Array<{ id: string; title: string; description?: string; maxScore: number; weight: number }>;
+  reviewRubrics: Array<{ rubricId: string; score: number; comment?: string }>;
 };
 
 const tags = ["审题错误", "计算错误", "概念混淆", "步骤遗漏", "粗心", "其他"];
@@ -44,6 +46,7 @@ export default function TeacherAssignmentReviewPage({
   const [data, setData] = useState<ReviewPayload | null>(null);
   const [overallComment, setOverallComment] = useState("");
   const [itemState, setItemState] = useState<Record<string, { wrongTag: string; comment: string }>>({});
+  const [rubricState, setRubricState] = useState<Record<string, { score: number; comment: string }>>({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +68,16 @@ export default function TeacherAssignmentReviewPage({
       nextState[item.questionId] = { wrongTag: item.wrongTag ?? "", comment: item.comment ?? "" };
     });
     setItemState(nextState);
+    const rubricMap: Record<string, { score: number; comment: string }> = {};
+    payload.reviewRubrics?.forEach((item: any) => {
+      rubricMap[item.rubricId] = { score: Number(item.score ?? 0), comment: item.comment ?? "" };
+    });
+    payload.rubrics?.forEach((rubric: any) => {
+      if (!rubricMap[rubric.id]) {
+        rubricMap[rubric.id] = { score: 0, comment: "" };
+      }
+    });
+    setRubricState(rubricMap);
     setAiReview(payload.aiReview?.result ?? null);
   }, [params.id, params.studentId]);
 
@@ -113,10 +126,15 @@ export default function TeacherAssignmentReviewPage({
       wrongTag: itemState[question.id]?.wrongTag || "",
       comment: itemState[question.id]?.comment || ""
     }));
+    const rubrics = (data?.rubrics ?? []).map((rubric) => ({
+      rubricId: rubric.id,
+      score: rubricState[rubric.id]?.score ?? 0,
+      comment: rubricState[rubric.id]?.comment ?? ""
+    }));
     const res = await fetch(`/api/teacher/assignments/${params.id}/reviews/${params.studentId}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ overallComment, items })
+      body: JSON.stringify({ overallComment, items, rubrics })
     });
     const payload = await res.json();
     if (!res.ok) {
@@ -387,6 +405,59 @@ export default function TeacherAssignmentReviewPage({
               style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
             />
           </label>
+          {data.rubrics?.length ? (
+            <div className="card" style={{ display: "grid", gap: 12 }}>
+              <div className="section-title">评分维度（Rubric）</div>
+              {data.rubrics.map((rubric) => (
+                <div className="card" key={rubric.id}>
+                  <div className="section-title">{rubric.title}</div>
+                  {rubric.description ? (
+                    <div style={{ fontSize: 12, color: "var(--ink-1)" }}>{rubric.description}</div>
+                  ) : null}
+                  <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                    <label>
+                      <div className="section-title">评分（满分 {rubric.maxScore}）</div>
+                      <input
+                        type="number"
+                        min={0}
+                        max={rubric.maxScore}
+                        value={rubricState[rubric.id]?.score ?? 0}
+                        onChange={(event) =>
+                          setRubricState((prev) => ({
+                            ...prev,
+                            [rubric.id]: {
+                              score: Number(event.target.value),
+                              comment: prev[rubric.id]?.comment ?? ""
+                            }
+                          }))
+                        }
+                        style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+                      />
+                    </label>
+                    <label>
+                      <div className="section-title">点评</div>
+                      <textarea
+                        value={rubricState[rubric.id]?.comment ?? ""}
+                        onChange={(event) =>
+                          setRubricState((prev) => ({
+                            ...prev,
+                            [rubric.id]: {
+                              score: prev[rubric.id]?.score ?? 0,
+                              comment: event.target.value
+                            }
+                          }))
+                        }
+                        rows={2}
+                        style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+                      />
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p style={{ color: "var(--ink-1)" }}>该作业暂无评分维度，可直接填写总体点评。</p>
+          )}
           {message ? <div style={{ color: "#1a7f37", fontSize: 13 }}>{message}</div> : null}
           {error ? <div style={{ color: "#b42318", fontSize: 13 }}>{error}</div> : null}
           <button className="button primary" type="submit" disabled={saving}>

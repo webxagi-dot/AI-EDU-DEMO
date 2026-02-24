@@ -23,8 +23,12 @@ CREATE TABLE IF NOT EXISTS student_profiles (
   subjects TEXT[] NOT NULL,
   target TEXT,
   school TEXT,
+  observer_code TEXT,
   updated_at TIMESTAMPTZ NOT NULL
 );
+
+ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS observer_code TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS student_profiles_observer_code_idx ON student_profiles (observer_code);
 
 CREATE TABLE IF NOT EXISTS knowledge_points (
   id TEXT PRIMARY KEY,
@@ -294,6 +298,33 @@ CREATE TABLE IF NOT EXISTS assignment_review_items (
   comment TEXT
 );
 
+CREATE TABLE IF NOT EXISTS assignment_rubrics (
+  id TEXT PRIMARY KEY,
+  assignment_id TEXT REFERENCES assignments(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  max_score INT NOT NULL DEFAULT 5,
+  weight INT NOT NULL DEFAULT 1,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS assignment_review_rubrics (
+  id TEXT PRIMARY KEY,
+  review_id TEXT REFERENCES assignment_reviews(id) ON DELETE CASCADE,
+  rubric_id TEXT REFERENCES assignment_rubrics(id) ON DELETE CASCADE,
+  score INT NOT NULL,
+  comment TEXT
+);
+
+CREATE TABLE IF NOT EXISTS announcements (
+  id TEXT PRIMARY KEY,
+  class_id TEXT REFERENCES classes(id) ON DELETE CASCADE,
+  author_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS notifications (
   id TEXT PRIMARY KEY,
   user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
@@ -319,6 +350,11 @@ CREATE INDEX IF NOT EXISTS assignment_submissions_student_idx ON assignment_subm
 CREATE INDEX IF NOT EXISTS assignment_reviews_assignment_idx ON assignment_reviews (assignment_id);
 CREATE INDEX IF NOT EXISTS assignment_reviews_student_idx ON assignment_reviews (student_id);
 CREATE INDEX IF NOT EXISTS assignment_review_items_review_idx ON assignment_review_items (review_id);
+CREATE INDEX IF NOT EXISTS assignment_rubrics_assignment_idx ON assignment_rubrics (assignment_id);
+CREATE INDEX IF NOT EXISTS assignment_review_rubrics_review_idx ON assignment_review_rubrics (review_id);
+CREATE INDEX IF NOT EXISTS assignment_review_rubrics_rubric_idx ON assignment_review_rubrics (rubric_id);
+CREATE INDEX IF NOT EXISTS announcements_class_idx ON announcements (class_id);
+CREATE INDEX IF NOT EXISTS announcements_created_idx ON announcements (created_at);
 CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id);
 CREATE INDEX IF NOT EXISTS notifications_created_idx ON notifications (created_at);
 

@@ -10,6 +10,9 @@ export default function StudentProfilePage() {
   const [subjects, setSubjects] = useState<string[]>(["math", "chinese", "english"]);
   const [target, setTarget] = useState("");
   const [school, setSchool] = useState("");
+  const [observerCode, setObserverCode] = useState("");
+  const [observerCopied, setObserverCopied] = useState(false);
+  const [observerMessage, setObserverMessage] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,6 +27,9 @@ export default function StudentProfilePage() {
           setSchool(data.data.school ?? "");
         }
       });
+    fetch("/api/student/observer-code")
+      .then((res) => res.json())
+      .then((data) => setObserverCode(data?.data?.code ?? ""));
   }, []);
 
   async function handleSave(event: React.FormEvent) {
@@ -117,6 +123,49 @@ export default function StudentProfilePage() {
             保存
           </button>
         </form>
+      </Card>
+      <Card title="家长绑定码" tag="家校">
+        <div className="feature-card">
+          <EduIcon name="board" />
+          <p>提供给家长注册使用，绑定后可查看学习进展。</p>
+        </div>
+        <div className="card" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="section-title" style={{ fontSize: 18 }}>
+            {observerCode || "生成中..."}
+          </div>
+          <button
+            className="button secondary"
+            type="button"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(observerCode);
+                setObserverCopied(true);
+                setTimeout(() => setObserverCopied(false), 2000);
+              } catch {
+                setObserverCopied(false);
+              }
+            }}
+          >
+            {observerCopied ? "已复制" : "复制绑定码"}
+          </button>
+          <button
+            className="button ghost"
+            type="button"
+            onClick={async () => {
+              const res = await fetch("/api/student/observer-code", { method: "POST" });
+              const data = await res.json();
+              if (res.ok) {
+                setObserverCode(data?.data?.code ?? "");
+                setObserverMessage("已生成新绑定码");
+              } else {
+                setObserverMessage(data?.error ?? "生成失败");
+              }
+            }}
+          >
+            重新生成
+          </button>
+        </div>
+        {observerMessage ? <div style={{ marginTop: 8, fontSize: 12 }}>{observerMessage}</div> : null}
       </Card>
     </div>
   );

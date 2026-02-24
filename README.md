@@ -20,6 +20,24 @@ npm run dev
 - 教师：teacher@demo.com / Teacher123
 - 管理员：admin@demo.com / Admin123
 
+### 批量测试账号（seed-bulk.mjs）
+
+执行 `node scripts/seed-bulk.mjs` 后，会生成一批可用账号与班级数据。默认示例：
+
+- 教师：teacher1@demo.com / Teacher123
+- 学生：student1@demo.com / Student123
+- 家长：parent1@demo.com / Parent123
+- 班级邀请码示例：JOIN01 / JOIN02 / JOIN03
+
+可通过环境变量控制数量：
+
+```
+SEED_TEACHERS=3 SEED_STUDENTS=40 SEED_PARENTS=12 \
+SEED_CLASSES=6 SEED_ASSIGNMENTS=12 \
+SEED_SUBJECTS="math,chinese,english" SEED_GRADES="4,7,10" \
+node scripts/seed-bulk.mjs
+```
+
 ## 注册入口
 
 - 学生/家长注册：/register
@@ -100,6 +118,12 @@ node scripts/seed-db.mjs
 
 ```
 node scripts/seed-stage3.mjs
+```
+
+5. 批量测试数据（多账号/多班级/多作业）
+
+```
+node scripts/seed-bulk.mjs
 ```
 
 > 若设置了 `DATABASE_URL` 则写入数据库，否则写入 `data/*.json`。

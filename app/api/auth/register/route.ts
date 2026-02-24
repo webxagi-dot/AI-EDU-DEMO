@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { createUser, getUserByEmail } from "@/lib/auth";
-import { upsertStudentProfile } from "@/lib/profiles";
+import { createUser, getUserByEmail, getUserById } from "@/lib/auth";
+import { getStudentProfileByObserverCode, upsertStudentProfile } from "@/lib/profiles";
 import { SUBJECT_OPTIONS } from "@/lib/constants";
 export const dynamic = "force-dynamic";
 
@@ -13,6 +13,7 @@ export async function POST(request: Request) {
     name?: string;
     grade?: string;
     studentEmail?: string;
+    observerCode?: string;
   };
 
   if (!body.role || !body.email || !body.password || !body.name) {
@@ -48,10 +49,20 @@ export async function POST(request: Request) {
   }
 
   if (body.role === "parent") {
-    if (!body.studentEmail) {
-      return NextResponse.json({ error: "studentEmail required" }, { status: 400 });
+    let student = null;
+    const observerCode = body.observerCode?.trim();
+    if (observerCode) {
+      const profile = await getStudentProfileByObserverCode(observerCode);
+      if (!profile) {
+        return NextResponse.json({ error: "observer code invalid" }, { status: 404 });
+      }
+      student = await getUserById(profile.userId);
+    } else if (body.studentEmail) {
+      student = await getUserByEmail(body.studentEmail);
+    } else {
+      return NextResponse.json({ error: "studentEmail or observerCode required" }, { status: 400 });
     }
-    const student = await getUserByEmail(body.studentEmail);
+
     if (!student || student.role !== "student") {
       return NextResponse.json({ error: "student not found" }, { status: 404 });
     }

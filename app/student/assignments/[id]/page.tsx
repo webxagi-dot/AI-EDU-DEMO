@@ -390,6 +390,30 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
         </Card>
       ) : null}
 
+      {review?.rubrics?.length ? (
+        <Card title="评分维度" tag="Rubric">
+          <div className="grid" style={{ gap: 12 }}>
+            {review.rubrics.map((rubric: any) => {
+              const record = (review.reviewRubrics ?? []).find((item: any) => item.rubricId === rubric.id);
+              return (
+                <div className="card" key={rubric.id}>
+                  <div className="section-title">{rubric.title}</div>
+                  {rubric.description ? (
+                    <div style={{ fontSize: 12, color: "var(--ink-1)" }}>{rubric.description}</div>
+                  ) : null}
+                  <div className="pill-list" style={{ marginTop: 8 }}>
+                    <span className="pill">
+                      得分 {record?.score ?? 0}/{rubric.maxScore}
+                    </span>
+                  </div>
+                  <p style={{ marginTop: 8 }}>点评：{record?.comment || "暂无"}</p>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      ) : null}
+
       {review?.aiReview ? (
         <Card title="AI 批改建议" tag="AI">
           <div className="card">

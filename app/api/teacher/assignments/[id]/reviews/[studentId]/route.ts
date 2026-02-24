@@ -7,6 +7,7 @@ import { createNotification } from "@/lib/notifications";
 import { saveReview, getReview } from "@/lib/reviews";
 import { getAssignmentUploads } from "@/lib/assignment-uploads";
 import { getAssignmentAIReview } from "@/lib/assignment-ai";
+import { ensureDefaultRubrics, getReviewRubrics, saveReviewRubrics } from "@/lib/rubrics";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +64,11 @@ export async function GET(_: Request, context: { params: { id: string; studentId
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
   const reviewResult = await getReview(assignment.id, studentId);
+  const rubrics = await ensureDefaultRubrics({
+    assignmentId: assignment.id,
+    submissionType: assignment.submissionType
+  });
+  const reviewRubrics = reviewResult.review ? await getReviewRubrics(reviewResult.review.id) : [];
 
   return NextResponse.json({
     assignment,
@@ -73,7 +79,9 @@ export async function GET(_: Request, context: { params: { id: string; studentId
     aiReview,
     questions: details,
     review: reviewResult.review,
-    reviewItems: reviewResult.items
+    reviewItems: reviewResult.items,
+    rubrics,
+    reviewRubrics
   });
 }
 
@@ -101,6 +109,7 @@ export async function POST(request: Request, context: { params: { id: string; st
   const body = (await request.json()) as {
     overallComment?: string;
     items?: Array<{ questionId: string; wrongTag?: string; comment?: string }>;
+    rubrics?: Array<{ rubricId: string; score: number; comment?: string }>;
   };
 
   const saved = await saveReview({
@@ -109,6 +118,17 @@ export async function POST(request: Request, context: { params: { id: string; st
     overallComment: body.overallComment?.trim(),
     items: body.items ?? []
   });
+
+  if (saved.review && body.rubrics?.length) {
+    await saveReviewRubrics({
+      reviewId: saved.review.id,
+      items: body.rubrics.map((item) => ({
+        rubricId: item.rubricId,
+        score: item.score,
+        comment: item.comment
+      }))
+    });
+  }
 
   await createNotification({
     userId: studentId,
@@ -127,5 +147,6 @@ export async function POST(request: Request, context: { params: { id: string; st
     });
   }
 
-  return NextResponse.json({ review: saved.review, reviewItems: saved.items });
+  const reviewRubrics = saved.review ? await getReviewRubrics(saved.review.id) : [];
+  return NextResponse.json({ review: saved.review, reviewItems: saved.items, reviewRubrics });
 }
