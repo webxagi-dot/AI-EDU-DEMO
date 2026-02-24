@@ -42,6 +42,20 @@ export default function StudentModulesPage() {
                     <div style={{ fontSize: 12, color: "var(--ink-1)" }}>
                       {module.description || "暂无说明"}
                     </div>
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ fontSize: 12, color: "var(--ink-1)" }}>
+                        进度 {module.assignmentCount ? Math.round((module.completedCount / module.assignmentCount) * 100) : 0}%
+                      </div>
+                      <div style={{ height: 8, background: "#f1f5f9", borderRadius: 999, overflow: "hidden" }}>
+                        <div
+                          style={{
+                            width: `${module.assignmentCount ? Math.round((module.completedCount / module.assignmentCount) * 100) : 0}%`,
+                            height: "100%",
+                            background: "linear-gradient(90deg, #1f6feb, #7ec4ff)"
+                          }}
+                        />
+                      </div>
+                    </div>
                     <div className="pill-list" style={{ marginTop: 8 }}>
                       <span className="pill">
                         完成 {module.completedCount}/{module.assignmentCount}

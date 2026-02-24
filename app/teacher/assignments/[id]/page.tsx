@@ -119,9 +119,14 @@ export default function TeacherAssignmentDetailPage({ params }: { params: { id: 
             </div>
           </div>
         </div>
-        <Link className="button ghost" href="/teacher" style={{ marginTop: 12 }}>
-          返回教师端
-        </Link>
+        <div className="cta-row" style={{ marginTop: 12 }}>
+          <Link className="button ghost" href="/teacher">
+            返回教师端
+          </Link>
+          <Link className="button secondary" href={`/teacher/assignments/${data.assignment.id}/stats`}>
+            查看统计
+          </Link>
+        </div>
       </Card>
 
       <Card title="提醒学生" tag="消息">

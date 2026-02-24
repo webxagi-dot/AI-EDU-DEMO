@@ -57,6 +57,17 @@ export default function TeacherGradebookPage() {
   );
   const visibleAssignments = assignments.slice(0, 6);
   const now = Date.now();
+  const ranked = useMemo(() => {
+    if (!data?.students?.length) return new Map<string, number>();
+    const sorted = [...data.students].sort((a, b) => b.stats.avgScore - a.stats.avgScore);
+    return new Map(sorted.map((student, index) => [student.id, index + 1]));
+  }, [data]);
+
+  function tierLabel(avgScore: number) {
+    if (avgScore >= 85) return "A";
+    if (avgScore >= 70) return "B";
+    return "C";
+  }
 
   function exportCSV() {
     if (!data) return;
@@ -179,7 +190,70 @@ export default function TeacherGradebookPage() {
         </div>
         <div className="cta-row" style={{ marginTop: 12 }}>
           <button className="button secondary" type="button" onClick={exportCSV}>
-            导出成绩册 CSV
+            导出 CSV
+          </button>
+          <button
+            className="button ghost"
+            type="button"
+            onClick={() => {
+              if (!data) return;
+              const header = [
+                "学生",
+                "邮箱",
+                "完成",
+                "待交",
+                "逾期",
+                "迟交",
+                "平均分",
+                ...assignments.map((item) => `${item.title}(${new Date(item.dueDate).toLocaleDateString("zh-CN")})`)
+              ];
+              const rows = data.students.map((student) => {
+                const base = [
+                  student.name,
+                  student.email,
+                  String(student.stats.completed),
+                  String(student.stats.pending),
+                  String(student.stats.overdue),
+                  String(student.stats.late),
+                  String(student.stats.avgScore)
+                ];
+                const assignmentCells = assignments.map((assignment) => {
+                  const progress = student.progress[assignment.id];
+                  const status = progress?.status ?? "pending";
+                  const dueTime = new Date(assignment.dueDate).getTime();
+                  const isOverdue = status !== "completed" && dueTime < now;
+                  if (status === "completed") {
+                    if (assignment.submissionType === "quiz" && progress?.total) {
+                      return `${progress.score ?? 0}/${progress.total ?? 0}`;
+                    }
+                    return "已交";
+                  }
+                  return isOverdue ? "逾期" : "待交";
+                });
+                return [...base, ...assignmentCells];
+              });
+              const table = `
+                <table>
+                  <thead><tr>${header.map((cell) => `<th>${cell}</th>`).join("")}</tr></thead>
+                  <tbody>
+                    ${rows
+                      .map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`)
+                      .join("")}
+                  </tbody>
+                </table>
+              `;
+              const blob = new Blob([`\uFEFF${table}`], { type: "application/vnd.ms-excel;charset=utf-8;" });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = `gradebook-${data.class?.name ?? "class"}.xls`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+            }}
+          >
+            导出 Excel
           </button>
         </div>
       </Card>
@@ -187,12 +261,25 @@ export default function TeacherGradebookPage() {
       <Card title="成绩分布" tag="分布">
         {data?.distribution?.length ? (
           <div className="grid grid-2">
-            {data.distribution.map((item) => (
-              <div className="card" key={item.label}>
-                <div className="section-title">{item.label}</div>
-                <div style={{ fontSize: 20, fontWeight: 700 }}>{item.count} 人</div>
-              </div>
-            ))}
+            {data.distribution.map((item) => {
+              const max = Math.max(...(data.distribution ?? []).map((d) => d.count), 1);
+              return (
+                <div className="card" key={item.label}>
+                  <div className="section-title">{item.label}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div
+                      style={{
+                        height: 8,
+                        borderRadius: 999,
+                        background: "linear-gradient(90deg, #1f6feb, #7ec4ff)",
+                        width: `${(item.count / max) * 100}%`
+                      }}
+                    />
+                    <span style={{ fontSize: 12, color: "var(--ink-1)" }}>{item.count} 人</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <p>暂无分布数据。</p>
@@ -212,6 +299,30 @@ export default function TeacherGradebookPage() {
                   <span className="pill">平均分 {item.avgScore}</span>
                   <span className="pill">完成率 {item.completionRate}%</span>
                 </div>
+                <div style={{ marginTop: 8 }}>
+                  <div style={{ fontSize: 12, color: "var(--ink-1)" }}>平均分</div>
+                  <div style={{ height: 8, background: "#f1f5f9", borderRadius: 999, overflow: "hidden" }}>
+                    <div
+                      style={{
+                        width: `${item.avgScore}%`,
+                        height: "100%",
+                        background: "linear-gradient(90deg, #f97316, #facc15)"
+                      }}
+                    />
+                  </div>
+                </div>
+                <div style={{ marginTop: 8 }}>
+                  <div style={{ fontSize: 12, color: "var(--ink-1)" }}>完成率</div>
+                  <div style={{ height: 8, background: "#f1f5f9", borderRadius: 999, overflow: "hidden" }}>
+                    <div
+                      style={{
+                        width: `${item.completionRate}%`,
+                        height: "100%",
+                        background: "linear-gradient(90deg, #16a34a, #65a30d)"
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -229,6 +340,8 @@ export default function TeacherGradebookPage() {
               <thead>
                 <tr>
                   <th>学生</th>
+                  <th>排名</th>
+                  <th>层级</th>
                   <th>完成</th>
                   <th>待交</th>
                   <th>逾期</th>
@@ -260,6 +373,8 @@ export default function TeacherGradebookPage() {
                       <div className="section-title">{student.name}</div>
                       <div className="gradebook-sub">{student.email}</div>
                     </td>
+                    <td>{ranked.get(student.id) ?? "-"}</td>
+                    <td>{tierLabel(student.stats.avgScore)}</td>
                     <td>{student.stats.completed}</td>
                     <td>{student.stats.pending}</td>
                     <td>{student.stats.overdue}</td>

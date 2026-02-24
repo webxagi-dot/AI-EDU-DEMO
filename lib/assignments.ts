@@ -234,6 +234,20 @@ export async function getAssignmentSubmission(
   return row ? mapAssignmentSubmission(row) : null;
 }
 
+export async function getAssignmentSubmissionsByAssignment(
+  assignmentId: string
+): Promise<AssignmentSubmission[]> {
+  if (!isDbEnabled()) {
+    const list = readJson<AssignmentSubmission[]>(ASSIGNMENT_SUBMISSION_FILE, []);
+    return list.filter((item) => item.assignmentId === assignmentId);
+  }
+  const rows = await query<DbAssignmentSubmission>(
+    "SELECT * FROM assignment_submissions WHERE assignment_id = $1",
+    [assignmentId]
+  );
+  return rows.map(mapAssignmentSubmission);
+}
+
 export async function upsertAssignmentSubmission(input: {
   assignmentId: string;
   studentId: string;

@@ -713,9 +713,14 @@ export default function TeacherPage() {
                 <p>
                   完成情况：{item.completed}/{item.total}
                 </p>
-                <Link className="button secondary" href={`/teacher/assignments/${item.id}`} style={{ marginTop: 8 }}>
-                  查看详情
-                </Link>
+                <div className="cta-row" style={{ marginTop: 8 }}>
+                  <Link className="button secondary" href={`/teacher/assignments/${item.id}`}>
+                    查看详情
+                  </Link>
+                  <Link className="button ghost" href={`/teacher/assignments/${item.id}/stats`}>
+                    作业统计
+                  </Link>
+                </div>
               </div>
             ))}
           </div>

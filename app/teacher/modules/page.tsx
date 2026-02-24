@@ -23,6 +23,7 @@ export default function TeacherModulesPage() {
   const [resourceFile, setResourceFile] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [moving, setMoving] = useState(false);
 
   const loadModules = useCallback(
     async (nextClassId?: string) => {
@@ -178,6 +179,27 @@ export default function TeacherModulesPage() {
     }
   }
 
+  async function swapOrder(index: number, direction: "up" | "down") {
+    if (moving) return;
+    const nextIndex = direction === "up" ? index - 1 : index + 1;
+    if (nextIndex < 0 || nextIndex >= modules.length) return;
+    const current = modules[index];
+    const target = modules[nextIndex];
+    setMoving(true);
+    await fetch(`/api/teacher/modules/${current.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderIndex: target.orderIndex })
+    });
+    await fetch(`/api/teacher/modules/${target.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderIndex: current.orderIndex })
+    });
+    await loadModules(classId);
+    setMoving(false);
+  }
+
   return (
     <div className="grid" style={{ gap: 18 }}>
       <div className="section-head">
@@ -263,13 +285,31 @@ export default function TeacherModulesPage() {
       <Card title="模块列表" tag="结构">
         {modules.length ? (
           <div className="grid" style={{ gap: 10 }}>
-            {modules.map((item) => (
+            {modules.map((item, index) => (
               <div className="card" key={item.id}>
                 <div className="section-title">{item.title}</div>
                 <div style={{ fontSize: 12, color: "var(--ink-1)" }}>
                   {item.description || "暂无说明"}
                 </div>
                 <div style={{ fontSize: 12, color: "var(--ink-1)" }}>排序 {item.orderIndex}</div>
+                <div className="cta-row" style={{ marginTop: 8 }}>
+                  <button
+                    className="button ghost"
+                    type="button"
+                    disabled={moving || index === 0}
+                    onClick={() => swapOrder(index, "up")}
+                  >
+                    上移
+                  </button>
+                  <button
+                    className="button ghost"
+                    type="button"
+                    disabled={moving || index === modules.length - 1}
+                    onClick={() => swapOrder(index, "down")}
+                  >
+                    下移
+                  </button>
+                </div>
               </div>
             ))}
           </div>
