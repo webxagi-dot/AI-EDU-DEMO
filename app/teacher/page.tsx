@@ -289,6 +289,21 @@ export default function TeacherPage() {
       </Card>
 
       <div className="grid grid-2">
+        <Card title="AI 教学工具">
+          <p>AI 组卷、课堂讲稿、错题讲评脚本、题库纠错。</p>
+          <Link className="button secondary" href="/teacher/ai-tools" style={{ marginTop: 12 }}>
+            进入工具
+          </Link>
+        </Card>
+        <Card title="学情分析">
+          <p>知识点掌握热力图 + 学情报告。</p>
+          <Link className="button secondary" href="/teacher/analysis" style={{ marginTop: 12 }}>
+            查看分析
+          </Link>
+        </Card>
+      </div>
+
+      <div className="grid grid-2">
         <Card title="创建班级">
           <form onSubmit={handleCreateClass} style={{ display: "grid", gap: 12 }}>
             <label>

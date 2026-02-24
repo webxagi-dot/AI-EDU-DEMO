@@ -1,0 +1,544 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Card from "@/components/Card";
+
+type ClassItem = {
+  id: string;
+  name: string;
+  subject: string;
+  grade: string;
+};
+
+type KnowledgePoint = {
+  id: string;
+  subject: string;
+  grade: string;
+  title: string;
+  chapter: string;
+  unit?: string;
+};
+
+type PaperQuestion = {
+  id: string;
+  stem: string;
+  options: string[];
+  answer: string;
+  explanation: string;
+  knowledgePointTitle: string;
+  chapter: string;
+  unit: string;
+  source: "bank" | "ai";
+};
+
+export default function TeacherAiToolsPage() {
+  const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [knowledgePoints, setKnowledgePoints] = useState<KnowledgePoint[]>([]);
+  const [paperForm, setPaperForm] = useState({
+    classId: "",
+    knowledgePointIds: [] as string[],
+    difficulty: "all",
+    questionType: "all",
+    durationMinutes: 40,
+    questionCount: 0,
+    mode: "ai"
+  });
+  const [paperResult, setPaperResult] = useState<{ questions: PaperQuestion[]; count: number } | null>(null);
+  const [outlineForm, setOutlineForm] = useState({ classId: "", topic: "", knowledgePointIds: [] as string[] });
+  const [outlineResult, setOutlineResult] = useState<any>(null);
+  const [wrongForm, setWrongForm] = useState({ classId: "", rangeDays: 7 });
+  const [wrongResult, setWrongResult] = useState<any>(null);
+  const [checkForm, setCheckForm] = useState({
+    questionId: "",
+    stem: "",
+    options: ["", "", "", ""],
+    answer: "",
+    explanation: ""
+  });
+  const [checkResult, setCheckResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/teacher/classes")
+      .then((res) => res.json())
+      .then((data) => setClasses(data.data ?? []));
+    fetch("/api/knowledge-points")
+      .then((res) => res.json())
+      .then((data) => setKnowledgePoints(data.data ?? []));
+  }, []);
+
+  useEffect(() => {
+    if (!paperForm.classId && classes.length) {
+      setPaperForm((prev) => ({ ...prev, classId: classes[0].id }));
+    }
+    if (!outlineForm.classId && classes.length) {
+      setOutlineForm((prev) => ({ ...prev, classId: classes[0].id }));
+    }
+    if (!wrongForm.classId && classes.length) {
+      setWrongForm((prev) => ({ ...prev, classId: classes[0].id }));
+    }
+  }, [classes, paperForm.classId, outlineForm.classId, wrongForm.classId]);
+
+  const paperClass = classes.find((item) => item.id === paperForm.classId);
+  const outlineClass = classes.find((item) => item.id === outlineForm.classId);
+  const wrongClass = classes.find((item) => item.id === wrongForm.classId);
+
+  const paperPoints = useMemo(() => {
+    if (!paperClass) return [];
+    return knowledgePoints.filter((kp) => kp.subject === paperClass.subject && kp.grade === paperClass.grade);
+  }, [knowledgePoints, paperClass]);
+
+  const outlinePoints = useMemo(() => {
+    if (!outlineClass) return [];
+    return knowledgePoints.filter((kp) => kp.subject === outlineClass.subject && kp.grade === outlineClass.grade);
+  }, [knowledgePoints, outlineClass]);
+
+  async function handleGeneratePaper(event: React.FormEvent) {
+    event.preventDefault();
+    if (!paperForm.classId) return;
+    setLoading(true);
+    const res = await fetch("/api/teacher/paper/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(paperForm)
+    });
+    const data = await res.json();
+    setPaperResult({ questions: data?.data?.questions ?? [], count: data?.data?.count ?? 0 });
+    setLoading(false);
+  }
+
+  async function handleGenerateOutline(event: React.FormEvent) {
+    event.preventDefault();
+    if (!outlineForm.classId || !outlineForm.topic) return;
+    setLoading(true);
+    const res = await fetch("/api/teacher/lesson/outline", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(outlineForm)
+    });
+    const data = await res.json();
+    setOutlineResult(data?.data ?? null);
+    setLoading(false);
+  }
+
+  async function handleWrongReview(event: React.FormEvent) {
+    event.preventDefault();
+    if (!wrongForm.classId) return;
+    setLoading(true);
+    const res = await fetch("/api/teacher/lesson/wrong-review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(wrongForm)
+    });
+    const data = await res.json();
+    setWrongResult(data?.data ?? null);
+    setLoading(false);
+  }
+
+  async function handleCheckQuestion(event: React.FormEvent) {
+    event.preventDefault();
+    setLoading(true);
+    const res = await fetch("/api/teacher/questions/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        questionId: checkForm.questionId || undefined,
+        stem: checkForm.stem,
+        options: checkForm.options,
+        answer: checkForm.answer,
+        explanation: checkForm.explanation
+      })
+    });
+    const data = await res.json();
+    setCheckResult(data?.data ?? null);
+    setLoading(false);
+  }
+
+  return (
+    <div className="grid" style={{ gap: 18 }}>
+      <Card title="AI 组卷">
+        <form onSubmit={handleGeneratePaper} style={{ display: "grid", gap: 12 }}>
+          <label>
+            <div className="section-title">选择班级</div>
+            <select
+              value={paperForm.classId}
+              onChange={(event) =>
+                setPaperForm((prev) => ({ ...prev, classId: event.target.value, knowledgePointIds: [] }))
+              }
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            >
+              {classes.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name} · {item.subject} · {item.grade} 年级
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <div className="section-title">知识点（可多选）</div>
+            <select
+              multiple
+              value={paperForm.knowledgePointIds}
+              onChange={(event) =>
+                setPaperForm((prev) => ({
+                  ...prev,
+                  knowledgePointIds: Array.from(event.target.selectedOptions).map((opt) => opt.value)
+                }))
+              }
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)", height: 140 }}
+            >
+              {paperPoints.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.unit ? `${item.unit} / ` : ""}
+                  {item.chapter} · {item.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="grid grid-2">
+            <label>
+              <div className="section-title">难度</div>
+              <select
+                value={paperForm.difficulty}
+                onChange={(event) => setPaperForm((prev) => ({ ...prev, difficulty: event.target.value }))}
+                style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+              >
+                <option value="all">不限</option>
+                <option value="easy">简单</option>
+                <option value="medium">中等</option>
+                <option value="hard">较难</option>
+              </select>
+            </label>
+            <label>
+              <div className="section-title">题型</div>
+              <select
+                value={paperForm.questionType}
+                onChange={(event) => setPaperForm((prev) => ({ ...prev, questionType: event.target.value }))}
+                style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+              >
+                <option value="all">不限</option>
+                <option value="choice">选择题</option>
+                <option value="application">应用题</option>
+                <option value="calculation">计算题</option>
+              </select>
+            </label>
+          </div>
+          <div className="grid grid-3">
+            <label>
+              <div className="section-title">考试时长（分钟）</div>
+              <input
+                type="number"
+                min={10}
+                max={120}
+                value={paperForm.durationMinutes}
+                onChange={(event) =>
+                  setPaperForm((prev) => ({ ...prev, durationMinutes: Number(event.target.value) }))
+                }
+                style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+              />
+            </label>
+            <label>
+              <div className="section-title">题目数量（可选）</div>
+              <input
+                type="number"
+                min={0}
+                max={50}
+                value={paperForm.questionCount}
+                onChange={(event) =>
+                  setPaperForm((prev) => ({ ...prev, questionCount: Number(event.target.value) }))
+                }
+                style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+              />
+            </label>
+            <label>
+              <div className="section-title">出题方式</div>
+              <select
+                value={paperForm.mode}
+                onChange={(event) => setPaperForm((prev) => ({ ...prev, mode: event.target.value }))}
+                style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+              >
+                <option value="bank">题库抽题</option>
+                <option value="ai">AI 生成</option>
+              </select>
+            </label>
+          </div>
+          <button className="button primary" type="submit" disabled={loading}>
+            {loading ? "生成中..." : "生成试卷"}
+          </button>
+        </form>
+
+        {paperResult ? (
+          <div style={{ marginTop: 12 }} className="grid" aria-live="polite">
+            <div className="badge">生成题目 {paperResult.count} 道</div>
+            <div className="grid" style={{ gap: 10, marginTop: 10 }}>
+              {paperResult.questions.map((item, index) => (
+                <div className="card" key={item.id}>
+                  <div className="section-title">
+                    {index + 1}. {item.stem}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--ink-1)" }}>
+                    {item.unit ? `${item.unit} / ` : ""}
+                    {item.chapter} · {item.knowledgePointTitle} · {item.source === "ai" ? "AI 生成" : "题库"}
+                  </div>
+                  <ul style={{ margin: "8px 0 0 16px" }}>
+                    {item.options.map((opt) => (
+                      <li key={opt}>{opt}</li>
+                    ))}
+                  </ul>
+                  <div style={{ marginTop: 6, fontSize: 12 }}>答案：{item.answer}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </Card>
+
+      <Card title="AI 课堂讲稿生成">
+        <form onSubmit={handleGenerateOutline} style={{ display: "grid", gap: 12 }}>
+          <label>
+            <div className="section-title">选择班级</div>
+            <select
+              value={outlineForm.classId}
+              onChange={(event) =>
+                setOutlineForm((prev) => ({ ...prev, classId: event.target.value, knowledgePointIds: [] }))
+              }
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            >
+              {classes.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name} · {item.subject} · {item.grade} 年级
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <div className="section-title">主题</div>
+            <input
+              value={outlineForm.topic}
+              onChange={(event) => setOutlineForm((prev) => ({ ...prev, topic: event.target.value }))}
+              placeholder="例如：分数的意义与比较"
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            />
+          </label>
+          <label>
+            <div className="section-title">关联知识点（可选）</div>
+            <select
+              multiple
+              value={outlineForm.knowledgePointIds}
+              onChange={(event) =>
+                setOutlineForm((prev) => ({
+                  ...prev,
+                  knowledgePointIds: Array.from(event.target.selectedOptions).map((opt) => opt.value)
+                }))
+              }
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)", height: 120 }}
+            >
+              {outlinePoints.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.chapter} · {item.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button className="button primary" type="submit" disabled={loading}>
+            {loading ? "生成中..." : "生成讲稿"}
+          </button>
+        </form>
+
+        {outlineResult?.outline ? (
+          <div className="grid" style={{ gap: 12, marginTop: 12 }}>
+            <div className="card">
+              <div className="section-title">教学目标</div>
+              <ul style={{ margin: "8px 0 0 16px" }}>
+                {outlineResult.outline.objectives?.map((item: string) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="card">
+              <div className="section-title">重点难点</div>
+              <ul style={{ margin: "8px 0 0 16px" }}>
+                {outlineResult.outline.keyPoints?.map((item: string) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="card">
+              <div className="section-title">PPT 大纲</div>
+              <div className="grid" style={{ gap: 8 }}>
+                {outlineResult.outline.slides?.map((slide: any, index: number) => (
+                  <div key={`${slide.title}-${index}`}>
+                    <div style={{ fontWeight: 600 }}>{slide.title}</div>
+                    <ul style={{ margin: "4px 0 0 16px" }}>
+                      {slide.bullets?.map((b: string) => (
+                        <li key={b}>{b}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="card">
+              <div className="section-title">板书步骤</div>
+              <ol style={{ margin: "8px 0 0 16px" }}>
+                {outlineResult.outline.blackboardSteps?.map((item: string) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ol>
+            </div>
+          </div>
+        ) : null}
+      </Card>
+
+      <Card title="AI 错题讲评课脚本">
+        <form onSubmit={handleWrongReview} style={{ display: "grid", gap: 12 }}>
+          <label>
+            <div className="section-title">选择班级</div>
+            <select
+              value={wrongForm.classId}
+              onChange={(event) => setWrongForm((prev) => ({ ...prev, classId: event.target.value }))}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            >
+              {classes.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name} · {item.subject} · {item.grade} 年级
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <div className="section-title">统计范围（天）</div>
+            <input
+              type="number"
+              min={3}
+              max={60}
+              value={wrongForm.rangeDays}
+              onChange={(event) => setWrongForm((prev) => ({ ...prev, rangeDays: Number(event.target.value) }))}
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            />
+          </label>
+          <button className="button primary" type="submit" disabled={loading}>
+            {loading ? "生成中..." : "生成讲评脚本"}
+          </button>
+        </form>
+
+        {wrongResult?.script ? (
+          <div className="grid" style={{ gap: 12, marginTop: 12 }}>
+            <div className="card">
+              <div className="section-title">高频错题知识点</div>
+              <ul style={{ margin: "8px 0 0 16px" }}>
+                {wrongResult.wrongPoints?.map((item: any) => (
+                  <li key={item.kpId}>
+                    {item.title} · 错题 {item.count} 次
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="card">
+              <div className="section-title">讲评课流程</div>
+              <ol style={{ margin: "8px 0 0 16px" }}>
+                {wrongResult.script.agenda?.map((item: string) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ol>
+            </div>
+            <div className="card">
+              <div className="section-title">讲评话术</div>
+              <div className="grid" style={{ gap: 8 }}>
+                {wrongResult.script.script?.map((item: string) => (
+                  <div key={item}>{item}</div>
+                ))}
+              </div>
+            </div>
+            <div className="card">
+              <div className="section-title">重点提醒</div>
+              <ul style={{ margin: "8px 0 0 16px" }}>
+                {wrongResult.script.reminders?.map((item: string) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ) : null}
+      </Card>
+
+      <Card title="AI 题库纠错">
+        <form onSubmit={handleCheckQuestion} style={{ display: "grid", gap: 12 }}>
+          <label>
+            <div className="section-title">题目 ID（可选，自动读取题库）</div>
+            <input
+              value={checkForm.questionId}
+              onChange={(event) => setCheckForm((prev) => ({ ...prev, questionId: event.target.value }))}
+              placeholder="q-xxx"
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            />
+          </label>
+          <label>
+            <div className="section-title">题干</div>
+            <textarea
+              value={checkForm.stem}
+              onChange={(event) => setCheckForm((prev) => ({ ...prev, stem: event.target.value }))}
+              rows={3}
+              placeholder="若不填写题目 ID，请手动填写题干"
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            />
+          </label>
+          <div className="grid grid-2">
+            {checkForm.options.map((opt, index) => (
+              <input
+                key={`opt-${index}`}
+                value={opt}
+                onChange={(event) => {
+                  const next = [...checkForm.options];
+                  next[index] = event.target.value;
+                  setCheckForm((prev) => ({ ...prev, options: next }));
+                }}
+                placeholder={`选项 ${index + 1}`}
+                style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+              />
+            ))}
+          </div>
+          <label>
+            <div className="section-title">答案</div>
+            <input
+              value={checkForm.answer}
+              onChange={(event) => setCheckForm((prev) => ({ ...prev, answer: event.target.value }))}
+              placeholder="正确答案"
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            />
+          </label>
+          <label>
+            <div className="section-title">解析</div>
+            <textarea
+              value={checkForm.explanation}
+              onChange={(event) => setCheckForm((prev) => ({ ...prev, explanation: event.target.value }))}
+              rows={2}
+              placeholder="题目解析（可选）"
+              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
+            />
+          </label>
+          <button className="button primary" type="submit" disabled={loading}>
+            {loading ? "检查中..." : "开始纠错"}
+          </button>
+        </form>
+
+        {checkResult ? (
+          <div className="grid" style={{ gap: 8, marginTop: 12 }}>
+            <div className="badge">风险等级：{checkResult.risk ?? "low"}</div>
+            {checkResult.issues?.length ? (
+              <ul style={{ margin: "6px 0 0 16px" }}>
+                {checkResult.issues.map((item: string) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>未发现明显问题。</p>
+            )}
+            {checkResult.suggestedAnswer ? <div>建议答案：{checkResult.suggestedAnswer}</div> : null}
+            {checkResult.notes ? <div style={{ fontSize: 12 }}>{checkResult.notes}</div> : null}
+          </div>
+        ) : null}
+      </Card>
+    </div>
+  );
+}

@@ -62,6 +62,32 @@ export type WritingFeedback = {
   corrected?: string;
 };
 
+export type LessonOutline = {
+  objectives: string[];
+  keyPoints: string[];
+  slides: { title: string; bullets: string[] }[];
+  blackboardSteps: string[];
+};
+
+export type WrongReviewScript = {
+  agenda: string[];
+  script: string[];
+  reminders: string[];
+};
+
+export type LearningReport = {
+  report: string;
+  highlights: string[];
+  reminders: string[];
+};
+
+export type QuestionCheck = {
+  issues: string[];
+  risk: "low" | "medium" | "high";
+  suggestedAnswer?: string;
+  notes?: string;
+};
+
 export type GenerateKnowledgePointsPayload = {
   subject: string;
   grade: string;
@@ -388,6 +414,197 @@ export async function generateWritingFeedback(payload: {
     improvements: improvements.slice(0, 3),
     corrected: corrected || undefined
   } as WritingFeedback;
+}
+
+export async function generateLessonOutline(payload: {
+  subject: string;
+  grade: string;
+  topic: string;
+  knowledgePoints?: string[];
+}) {
+  const provider = process.env.LLM_PROVIDER ?? "mock";
+  if (provider === "mock") return null;
+
+  const context = [
+    `学科：${payload.subject}`,
+    `年级：${payload.grade}`,
+    `主题：${payload.topic}`,
+    payload.knowledgePoints?.length ? `知识点：${payload.knowledgePoints.join("、")}` : ""
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const userPrompt = `${context}\n请生成课堂讲稿结构，输出 JSON：{\"objectives\":[\"...\"],\"keyPoints\":[\"...\"],\"slides\":[{\"title\":\"...\",\"bullets\":[\"...\"]}],\"blackboardSteps\":[\"...\"]}。slides 为 PPT 大纲，blackboardSteps 为板书步骤。不要输出多余文本。`;
+
+  let text: string | null = null;
+  if (provider === "zhipu" || provider === "compatible") {
+    text = await callZhipuLLM([
+      { role: "system", content: GENERATE_PROMPT },
+      { role: "user", content: userPrompt }
+    ]);
+  } else if (provider === "custom") {
+    text = await callCustomLLM(`${GENERATE_PROMPT}\n${userPrompt}`);
+  }
+
+  if (!text) return null;
+  const parsed = extractJson(text);
+  if (!parsed || typeof parsed !== "object") return null;
+  const objectives = Array.isArray((parsed as any).objectives) ? (parsed as any).objectives : [];
+  const keyPoints = Array.isArray((parsed as any).keyPoints) ? (parsed as any).keyPoints : [];
+  const slides = Array.isArray((parsed as any).slides) ? (parsed as any).slides : [];
+  const blackboardSteps = Array.isArray((parsed as any).blackboardSteps)
+    ? (parsed as any).blackboardSteps
+    : [];
+
+  const cleanSlides = slides
+    .map((item: any) => ({
+      title: String(item?.title ?? "").trim(),
+      bullets: Array.isArray(item?.bullets) ? item.bullets.map((b: any) => String(b).trim()).filter(Boolean) : []
+    }))
+    .filter((item: any) => item.title);
+
+  return {
+    objectives: objectives.map((item: any) => String(item).trim()).filter(Boolean),
+    keyPoints: keyPoints.map((item: any) => String(item).trim()).filter(Boolean),
+    slides: cleanSlides,
+    blackboardSteps: blackboardSteps.map((item: any) => String(item).trim()).filter(Boolean)
+  } as LessonOutline;
+}
+
+export async function generateWrongReviewScript(payload: {
+  subject: string;
+  grade: string;
+  className?: string;
+  wrongPoints: string[];
+}) {
+  const provider = process.env.LLM_PROVIDER ?? "mock";
+  if (provider === "mock") return null;
+
+  const context = [
+    `学科：${payload.subject}`,
+    `年级：${payload.grade}`,
+    payload.className ? `班级：${payload.className}` : "",
+    `重点错因/知识点：${payload.wrongPoints.join("、")}`
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const userPrompt = `${context}\n请输出“错题讲评课”脚本，JSON 格式：{\"agenda\":[\"...\"],\"script\":[\"...\"],\"reminders\":[\"...\"]}。script 为讲评课流程话术分段。不要输出多余文本。`;
+
+  let text: string | null = null;
+  if (provider === "zhipu" || provider === "compatible") {
+    text = await callZhipuLLM([
+      { role: "system", content: GENERATE_PROMPT },
+      { role: "user", content: userPrompt }
+    ]);
+  } else if (provider === "custom") {
+    text = await callCustomLLM(`${GENERATE_PROMPT}\n${userPrompt}`);
+  }
+
+  if (!text) return null;
+  const parsed = extractJson(text);
+  if (!parsed || typeof parsed !== "object") return null;
+
+  const agenda = Array.isArray((parsed as any).agenda) ? (parsed as any).agenda : [];
+  const script = Array.isArray((parsed as any).script) ? (parsed as any).script : [];
+  const reminders = Array.isArray((parsed as any).reminders) ? (parsed as any).reminders : [];
+
+  return {
+    agenda: agenda.map((item: any) => String(item).trim()).filter(Boolean),
+    script: script.map((item: any) => String(item).trim()).filter(Boolean),
+    reminders: reminders.map((item: any) => String(item).trim()).filter(Boolean)
+  } as WrongReviewScript;
+}
+
+export async function generateLearningReport(payload: {
+  className?: string;
+  summary: string;
+  weakPoints: string[];
+}) {
+  const provider = process.env.LLM_PROVIDER ?? "mock";
+  if (provider === "mock") return null;
+
+  const context = [
+    payload.className ? `班级：${payload.className}` : "",
+    `摘要：${payload.summary}`,
+    payload.weakPoints.length ? `薄弱点：${payload.weakPoints.join("、")}` : ""
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const userPrompt = `${context}\n请生成学情报告，输出 JSON：{\"report\":\"...\",\"highlights\":[\"...\"],\"reminders\":[\"...\"]}。report 为简短段落，reminders 为重点提醒。不要输出多余文本。`;
+
+  let text: string | null = null;
+  if (provider === "zhipu" || provider === "compatible") {
+    text = await callZhipuLLM([
+      { role: "system", content: GENERATE_PROMPT },
+      { role: "user", content: userPrompt }
+    ]);
+  } else if (provider === "custom") {
+    text = await callCustomLLM(`${GENERATE_PROMPT}\n${userPrompt}`);
+  }
+
+  if (!text) return null;
+  const parsed = extractJson(text);
+  if (!parsed || typeof parsed !== "object") return null;
+  const report = String((parsed as any).report ?? "").trim();
+  const highlights = Array.isArray((parsed as any).highlights) ? (parsed as any).highlights : [];
+  const reminders = Array.isArray((parsed as any).reminders) ? (parsed as any).reminders : [];
+
+  if (!report) return null;
+  return {
+    report,
+    highlights: highlights.map((item: any) => String(item).trim()).filter(Boolean),
+    reminders: reminders.map((item: any) => String(item).trim()).filter(Boolean)
+  } as LearningReport;
+}
+
+export async function generateQuestionCheck(payload: {
+  stem: string;
+  options: string[];
+  answer: string;
+  explanation?: string;
+  subject?: string;
+  grade?: string;
+}) {
+  const provider = process.env.LLM_PROVIDER ?? "mock";
+  if (provider === "mock") return null;
+
+  const context = [
+    payload.subject ? `学科：${payload.subject}` : "",
+    payload.grade ? `年级：${payload.grade}` : ""
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const userPrompt = `${context}\n题目：${payload.stem}\n选项：${payload.options.join(" | ")}\n答案：${payload.answer}\n解析：${payload.explanation ?? ""}\n请检查是否存在题目歧义、答案错误或选项重复。输出 JSON：{\"issues\":[\"...\"],\"risk\":\"low|medium|high\",\"suggestedAnswer\":\"...\",\"notes\":\"...\"}。不要输出多余文本。`;
+
+  let text: string | null = null;
+  if (provider === "zhipu" || provider === "compatible") {
+    text = await callZhipuLLM([
+      { role: "system", content: GENERATE_PROMPT },
+      { role: "user", content: userPrompt }
+    ]);
+  } else if (provider === "custom") {
+    text = await callCustomLLM(`${GENERATE_PROMPT}\n${userPrompt}`);
+  }
+
+  if (!text) return null;
+  const parsed = extractJson(text);
+  if (!parsed || typeof parsed !== "object") return null;
+
+  const issues = Array.isArray((parsed as any).issues) ? (parsed as any).issues : [];
+  const riskRaw = String((parsed as any).risk ?? "low").toLowerCase();
+  const risk = ["low", "medium", "high"].includes(riskRaw) ? (riskRaw as "low" | "medium" | "high") : "low";
+  const suggestedAnswer = String((parsed as any).suggestedAnswer ?? "").trim();
+  const notes = String((parsed as any).notes ?? "").trim();
+
+  return {
+    issues: issues.map((item: any) => String(item).trim()).filter(Boolean),
+    risk,
+    suggestedAnswer: suggestedAnswer || undefined,
+    notes: notes || undefined
+  } as QuestionCheck;
 }
 
 export async function generateKnowledgePointsDraft(payload: GenerateKnowledgePointsPayload) {
