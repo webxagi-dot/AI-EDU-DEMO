@@ -3,6 +3,7 @@ import { getCurrentUser, getParentsByStudentId } from "@/lib/auth";
 import { getClassById, getClassesByTeacher, getClassStudentIds } from "@/lib/classes";
 import { createAssignment, getAssignmentProgress, getAssignmentsByClassIds } from "@/lib/assignments";
 import { createKnowledgePoint, createQuestion, getKnowledgePoints, getQuestions } from "@/lib/content";
+import type { KnowledgePoint } from "@/lib/types";
 import { createNotification } from "@/lib/notifications";
 import { generateQuestionDraft } from "@/lib/ai";
 import type { Difficulty } from "@/lib/types";
@@ -120,16 +121,17 @@ export async function POST(request: Request) {
     const subjectPoints = knowledgePoints.filter(
       (item) => item.subject === klass.subject && item.grade === klass.grade
     );
-    let kp = body.knowledgePointId
+    let kp: KnowledgePoint | undefined = body.knowledgePointId
       ? subjectPoints.find((item) => item.id === body.knowledgePointId)
       : subjectPoints[0];
     if (!kp) {
-      kp = await createKnowledgePoint({
+      kp =
+        (await createKnowledgePoint({
         subject: klass.subject,
         grade: klass.grade,
         title: "综合练习",
         chapter: "综合"
-      });
+      })) ?? undefined;
     }
     if (!kp) {
       return NextResponse.json({ error: "暂无可用知识点，请先生成知识点" }, { status: 400 });
