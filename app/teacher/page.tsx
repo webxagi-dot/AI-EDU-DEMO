@@ -49,6 +49,8 @@ export default function TeacherPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [joinRequests, setJoinRequests] = useState<any[]>([]);
+  const [assignmentError, setAssignmentError] = useState<string | null>(null);
+  const [assignmentMessage, setAssignmentMessage] = useState<string | null>(null);
 
   const [classForm, setClassForm] = useState({ name: "", subject: "math", grade: "4" });
   const [studentForm, setStudentForm] = useState({ classId: "", email: "" });
@@ -175,6 +177,8 @@ export default function TeacherPage() {
     setLoading(true);
     setError(null);
     setMessage(null);
+    setAssignmentError(null);
+    setAssignmentMessage(null);
     const res = await fetch("/api/teacher/assignments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -196,10 +200,12 @@ export default function TeacherPage() {
     const data = await res.json();
     if (!res.ok) {
       setError(data?.error ?? "发布失败");
+      setAssignmentError(data?.error ?? "发布失败");
       setLoading(false);
       return;
     }
     setMessage("作业发布成功。");
+    setAssignmentMessage("作业发布成功。");
     setAssignmentForm((prev) => ({ ...prev, title: "", description: "", gradingFocus: "" }));
     await loadAll();
     setLoading(false);
@@ -570,6 +576,10 @@ export default function TeacherPage() {
                 style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid var(--stroke)" }}
               />
             </label>
+          ) : null}
+          {assignmentError ? <div style={{ color: "#b42318", fontSize: 13 }}>{assignmentError}</div> : null}
+          {assignmentMessage ? (
+            <div style={{ color: "#1a7f37", fontSize: 13 }}>{assignmentMessage}</div>
           ) : null}
           <button className="button primary" type="submit" disabled={loading}>
             {loading ? "提交中..." : "发布作业"}
