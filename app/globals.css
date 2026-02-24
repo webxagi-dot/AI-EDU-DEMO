@@ -438,14 +438,33 @@ textarea:focus {
   line-height: 1.6;
 }
 
+.hero-visual .chalkboard-body {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
 .hero-visual .chalk-math {
-  margin-top: 12px;
   display: grid;
   gap: 4px;
   font-family: "Courier New", monospace;
-  font-size: 14px;
-  color: rgba(230, 240, 246, 0.85);
+  font-size: 13px;
+  color: rgba(244, 208, 111, 0.85);
   letter-spacing: 0.3px;
+  text-align: right;
+  min-width: 180px;
+}
+
+@media (max-width: 720px) {
+  .hero-visual .chalkboard-body {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .hero-visual .chalk-math {
+    text-align: left;
+  }
 }
 
 .hero-visual .sticky-note {

@@ -26,16 +26,19 @@ export default function Home() {
         <div className="hero-visual">
           <div className="chalkboard">
             <h3>今日课堂</h3>
-            <ul>
-              <li>分数意义与比较</li>
-              <li>读写分数练习</li>
-              <li>错题归因与讲评</li>
-            </ul>
-            <div className="chalk-math">
-              <div>a^2 + b^2 = c^2</div>
-              <div>1/2 + 1/3 = 5/6</div>
-              <div>S = (a + b) * h / 2</div>
+            <div className="chalkboard-body">
+              <ul>
+                <li>分数意义与比较</li>
+                <li>读写分数练习</li>
+                <li>错题归因与讲评</li>
+              </ul>
+              <div className="chalk-math">
+                <div>a^2 + b^2 = c^2</div>
+                <div>1/2 + 1/3 = 5/6</div>
+                <div>S = (a + b) * h / 2</div>
+              </div>
             </div>
+          </div>
           </div>
           <div className="note-row">
             <div className="sticky-note">
