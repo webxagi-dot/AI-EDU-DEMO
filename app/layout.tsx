@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import UserMenu from "@/components/UserMenu";
 
 export const metadata = {
-  title: "星光课后 AI 辅导",
+  title: "航科AI教育",
   description: "小学课后辅导 MVP"
 };
 
@@ -15,7 +15,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <div className="app-shell">
           <header className="site-header">
-            <div className="brand">星光课后 AI</div>
+            <div className="brand">航科AI教育</div>
             <nav className="nav-links">
               <Link href="/student">学生端</Link>
               <Link href="/teacher">教师端</Link>
@@ -32,7 +32,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <UserMenu user={user} />
           </header>
           <main className="main">{children}</main>
-          <footer className="site-footer">© 2026 星光课后 AI 课程辅导 MVP</footer>
+          <footer className="site-footer">© 2026 航科AI教育 课程辅导 MVP</footer>
         </div>
       </body>
     </html>
