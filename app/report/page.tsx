@@ -52,7 +52,15 @@ export default function ReportPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="学习报告">
+      <div className="section-head">
+        <div>
+          <h2>学习报告</h2>
+          <div className="section-sub">学习数据与薄弱点复盘。</div>
+        </div>
+        <span className="chip">近 7 天</span>
+      </div>
+
+      <Card title="学习报告" tag="统计">
         <div className="grid grid-2">
           <div className="card">
             <div className="section-title">本周练习题量</div>
@@ -74,7 +82,7 @@ export default function ReportPage() {
           </div>
         </div>
       </Card>
-      <Card title="学习画像 · 知识点掌握热力图">
+      <Card title="学习画像 · 知识点掌握热力图" tag="画像">
         {!profile ? <p>加载中...</p> : null}
         {profile?.error ? <p>学习画像加载失败。</p> : null}
         {profile?.subjects?.length ? (
@@ -170,7 +178,7 @@ export default function ReportPage() {
           <p>暂无知识点掌握数据。</p>
         )}
       </Card>
-      <Card title="掌握趋势（近 7 天）">
+      <Card title="掌握趋势（近 7 天）" tag="趋势">
         <div className="grid" style={{ gap: 8 }}>
           {report.trend?.map((item: any) => (
             <div key={item.date} style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -190,7 +198,7 @@ export default function ReportPage() {
           ))}
         </div>
       </Card>
-      <Card title="薄弱点">
+      <Card title="薄弱点" tag="提醒">
         <div className="grid" style={{ gap: 8 }}>
           {report.weakPoints?.length ? (
             report.weakPoints.map((item: any) => (

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/Card";
+import EduIcon from "@/components/EduIcon";
 
 type ReviewPayload = {
   assignment: { id: string; title: string; dueDate: string };
@@ -105,21 +106,40 @@ export default function TeacherAssignmentReviewPage({
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="作业批改">
-        <div className="section-title">{data.assignment.title}</div>
-        <p>
-          {data.class.name} · {data.class.subject} · {data.class.grade} 年级
-        </p>
-        <p>学生：{data.student.name}</p>
-        <p>
-          得分：{data.submission?.score ?? 0}/{data.submission?.total ?? 0}
-        </p>
-        <Link className="button secondary" href={`/teacher/assignments/${params.id}`} style={{ marginTop: 12 }}>
+      <div className="section-head">
+        <div>
+          <h2>作业批改</h2>
+          <div className="section-sub">
+            {data.class.name} · {data.class.subject} · {data.class.grade} 年级
+          </div>
+        </div>
+        <span className="chip">学生：{data.student.name}</span>
+      </div>
+
+      <Card title="作业概览" tag="概览">
+        <div className="grid grid-2">
+          <div className="card feature-card">
+            <EduIcon name="board" />
+            <div className="section-title">{data.assignment.title}</div>
+            <p>截止日期：{new Date(data.assignment.dueDate).toLocaleDateString("zh-CN")}</p>
+          </div>
+          <div className="card feature-card">
+            <EduIcon name="chart" />
+            <div className="section-title">作业成绩</div>
+            <p>
+              得分：{data.submission?.score ?? 0}/{data.submission?.total ?? 0}
+            </p>
+            <div className="pill-list">
+              <span className="pill">错题 {wrongQuestions.length} 题</span>
+            </div>
+          </div>
+        </div>
+        <Link className="button ghost" href={`/teacher/assignments/${params.id}`} style={{ marginTop: 12 }}>
           返回作业详情
         </Link>
       </Card>
 
-      <Card title="错题复盘">
+      <Card title="错题复盘" tag="批改">
         {wrongQuestions.length === 0 ? (
           <p>该学生全部答对，无需批改。</p>
         ) : (
@@ -129,9 +149,11 @@ export default function TeacherAssignmentReviewPage({
                 <div className="section-title">
                   {index + 1}. {question.stem}
                 </div>
-                <p>学生答案：{question.answer || "未作答"}</p>
-                <p>正确答案：{question.correctAnswer}</p>
-                <p>解析：{question.explanation}</p>
+                <div className="pill-list" style={{ marginTop: 8 }}>
+                  <span className="pill">学生答案：{question.answer || "未作答"}</span>
+                  <span className="pill">正确答案：{question.correctAnswer}</span>
+                </div>
+                <p style={{ marginTop: 8 }}>解析：{question.explanation}</p>
                 <label>
                   <div className="section-title">错因标签</div>
                   <select

@@ -156,7 +156,15 @@ export default function TeacherAiToolsPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="AI 组卷">
+      <div className="section-head">
+        <div>
+          <h2>AI 教学工具</h2>
+          <div className="section-sub">一站式组卷、讲稿与纠错。</div>
+        </div>
+        <span className="chip">教学助手</span>
+      </div>
+
+      <Card title="AI 组卷" tag="组卷">
         <form onSubmit={handleGeneratePaper} style={{ display: "grid", gap: 12 }}>
           <label>
             <div className="section-title">选择班级</div>
@@ -293,7 +301,7 @@ export default function TeacherAiToolsPage() {
         ) : null}
       </Card>
 
-      <Card title="AI 课堂讲稿生成">
+      <Card title="AI 课堂讲稿生成" tag="讲稿">
         <form onSubmit={handleGenerateOutline} style={{ display: "grid", gap: 12 }}>
           <label>
             <div className="section-title">选择班级</div>
@@ -390,7 +398,7 @@ export default function TeacherAiToolsPage() {
         ) : null}
       </Card>
 
-      <Card title="AI 错题讲评课脚本">
+      <Card title="AI 错题讲评课脚本" tag="讲评">
         <form onSubmit={handleWrongReview} style={{ display: "grid", gap: 12 }}>
           <label>
             <div className="section-title">选择班级</div>
@@ -462,7 +470,7 @@ export default function TeacherAiToolsPage() {
         ) : null}
       </Card>
 
-      <Card title="AI 题库纠错">
+      <Card title="AI 题库纠错" tag="质检">
         <form onSubmit={handleCheckQuestion} style={{ display: "grid", gap: 12 }}>
           <label>
             <div className="section-title">题目 ID（可选，自动读取题库）</div>

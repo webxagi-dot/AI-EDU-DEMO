@@ -83,7 +83,15 @@ export default function TutorPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="AI 辅导">
+      <div className="section-head">
+        <div>
+          <h2>AI 辅导</h2>
+          <div className="section-sub">提问、讲解与学习记录。</div>
+        </div>
+        <span className="chip">智能讲解</span>
+      </div>
+
+      <Card title="AI 辅导" tag="提问">
         <label>
           <div className="section-title">输入你的问题</div>
           <textarea
@@ -100,7 +108,7 @@ export default function TutorPage() {
       </Card>
 
       {answer ? (
-        <Card title="AI 讲解">
+        <Card title="AI 讲解" tag="讲解">
           <p>{answer.answer}</p>
           {answer.provider ? (
             <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-1)" }}>
@@ -130,7 +138,7 @@ export default function TutorPage() {
         </Card>
       ) : null}
 
-      <Card title="AI 对话历史">
+      <Card title="AI 对话历史" tag="记录">
         <div className="cta-row">
           <button className="button secondary" onClick={() => setShowFavorites((prev) => !prev)}>
             {showFavorites ? "查看全部" : "只看收藏"}

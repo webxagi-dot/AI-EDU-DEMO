@@ -36,8 +36,15 @@ export default function AdminRegisterPage() {
   }
 
   return (
-    <div className="grid" style={{ gap: 18, maxWidth: 480 }}>
-      <Card title="管理员注册">
+    <div className="grid" style={{ gap: 18, maxWidth: 560 }}>
+      <div className="section-head">
+        <div>
+          <h2>管理员注册</h2>
+          <div className="section-sub">配置题库、知识点树与平台权限。</div>
+        </div>
+        <span className="chip">管理端</span>
+      </div>
+      <Card title="管理员注册" tag="权限">
         <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12 }}>
           <label>
             <div className="section-title">姓名</div>
@@ -83,6 +90,11 @@ export default function AdminRegisterPage() {
         </form>
         <div style={{ marginTop: 12, fontSize: 12, color: "var(--ink-1)" }}>
           若已配置 ADMIN_INVITE_CODE，需要输入邀请码；否则仅当系统还没有管理员时允许注册。
+        </div>
+        <div className="pill-list" style={{ marginTop: 10 }}>
+          <span className="pill">题库治理</span>
+          <span className="pill">知识点树</span>
+          <span className="pill">运营报表</span>
         </div>
       </Card>
     </div>

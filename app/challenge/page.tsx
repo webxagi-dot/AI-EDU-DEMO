@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/Card";
+import EduIcon from "@/components/EduIcon";
 
 type ChallengeTask = {
   id: string;
@@ -47,8 +48,19 @@ export default function ChallengePage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="闯关式任务系统">
-        <p>完成挑战获取奖励积分，用于激励学习。</p>
+      <div className="section-head">
+        <div>
+          <h2>闯关式任务</h2>
+          <div className="section-sub">挑战目标驱动学习节奏，获取奖励积分。</div>
+        </div>
+        <span className="chip">挑战系统</span>
+      </div>
+
+      <Card title="闯关式任务系统" tag="激励">
+        <div className="feature-card">
+          <EduIcon name="trophy" />
+          <p>完成挑战获取奖励积分，用于激励学习。</p>
+        </div>
         <div className="card" style={{ marginTop: 12 }}>
           <div className="section-title">当前积分</div>
           <div style={{ fontSize: 24, fontWeight: 700 }}>{points}</div>
@@ -60,7 +72,7 @@ export default function ChallengePage() {
         </div>
       </Card>
 
-      <Card title="挑战任务">
+      <Card title="挑战任务" tag="清单">
         <div className="grid" style={{ gap: 12 }}>
           {tasks.map((task) => (
             <div className="card" key={task.id}>

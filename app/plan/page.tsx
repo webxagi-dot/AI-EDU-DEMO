@@ -29,8 +29,22 @@ export default async function PlanPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="学习计划">
+      <div className="section-head">
+        <div>
+          <h2>学习计划</h2>
+          <div className="section-sub">7 天游学节奏，聚焦掌握与巩固。</div>
+        </div>
+        <span className="chip">自动规划</span>
+      </div>
+      <Card title="学习计划" tag="7 天">
         <p>为你生成 7 天游学计划（多学科）。</p>
+        <div className="pill-list" style={{ marginTop: 10 }}>
+          {subjects.map((subject) => (
+            <span className="pill" key={subject}>
+              {labelMap[subject] ?? subject}
+            </span>
+          ))}
+        </div>
         <div className="grid" style={{ gap: 12, marginTop: 12 }}>
           {finalPlans.map((plan) => (
             <div className="card" key={plan.subject}>

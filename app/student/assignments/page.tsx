@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/Card";
+import EduIcon from "@/components/EduIcon";
 
 type AssignmentItem = {
   id: string;
@@ -48,24 +49,41 @@ export default function StudentAssignmentsPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="作业中心">
+      <div className="section-head">
+        <div>
+          <h2>作业中心</h2>
+          <div className="section-sub">查看作业进度与得分反馈。</div>
+        </div>
+        <span className="chip">共 {assignments.length} 份作业</span>
+      </div>
+
+      <Card title="作业列表" tag="作业">
         {assignments.length === 0 ? (
           <p>暂无作业。</p>
         ) : (
           <div className="grid" style={{ gap: 12 }}>
             {assignments.map((item) => (
               <div className="card" key={item.id}>
-                <div className="section-title">{item.title}</div>
-                <p>
-                  {item.className} · {subjectLabel[item.classSubject] ?? item.classSubject} · {item.classGrade} 年级
-                </p>
-                <p>截止日期：{new Date(item.dueDate).toLocaleDateString("zh-CN")}</p>
-                <p>状态：{item.status === "completed" ? "已完成" : "待完成"}</p>
-                {item.status === "completed" ? (
+                <div className="card-header">
+                  <div className="section-title">{item.title}</div>
+                  <span className="card-tag">{item.status === "completed" ? "已完成" : "待完成"}</span>
+                </div>
+                <div className="feature-card">
+                  <EduIcon name="pencil" />
                   <p>
-                    得分：{item.score ?? 0}/{item.total ?? 0}
+                    {item.className} · {subjectLabel[item.classSubject] ?? item.classSubject} · {item.classGrade} 年级
                   </p>
-                ) : null}
+                </div>
+                <div className="pill-list" style={{ marginTop: 8 }}>
+                  <span className="pill">截止 {new Date(item.dueDate).toLocaleDateString("zh-CN")}</span>
+                  {item.status === "completed" ? (
+                    <span className="pill">
+                      得分 {item.score ?? 0}/{item.total ?? 0}
+                    </span>
+                  ) : (
+                    <span className="pill">等待提交</span>
+                  )}
+                </div>
                 <Link className="button secondary" href={`/student/assignments/${item.id}`} style={{ marginTop: 8 }}>
                   {item.status === "completed" ? "查看详情" : "开始作业"}
                 </Link>

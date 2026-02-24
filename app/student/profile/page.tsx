@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Card from "@/components/Card";
+import EduIcon from "@/components/EduIcon";
 
 const subjectOptions = [
   { key: "math", label: "数学" },
@@ -54,8 +55,19 @@ export default function StudentProfilePage() {
   }
 
   return (
-    <div className="grid" style={{ gap: 18, maxWidth: 640 }}>
-      <Card title="学生资料设置">
+    <div className="grid" style={{ gap: 18, maxWidth: 720 }}>
+      <div className="section-head">
+        <div>
+          <h2>学生资料</h2>
+          <div className="section-sub">完善年级、学科与学习目标。</div>
+        </div>
+        <span className="chip">学习档案</span>
+      </div>
+      <Card title="学生资料设置" tag="基础">
+        <div className="feature-card">
+          <EduIcon name="book" />
+          <p>填写学科偏好与学习目标，优化推荐。</p>
+        </div>
         <form onSubmit={handleSave} style={{ display: "grid", gap: 12 }}>
           <label>
             <div className="section-title">年级</div>

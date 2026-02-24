@@ -76,7 +76,15 @@ export default function TeacherAnalysisPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="班级学情分析">
+      <div className="section-head">
+        <div>
+          <h2>班级学情分析</h2>
+          <div className="section-sub">掌握热力图 + 学情报告。</div>
+        </div>
+        <span className="chip">数据面板</span>
+      </div>
+
+      <Card title="班级学情分析" tag="筛选">
         <div className="grid grid-2">
           <label>
             <div className="section-title">选择班级</div>
@@ -101,7 +109,7 @@ export default function TeacherAnalysisPage() {
         </div>
       </Card>
 
-      <Card title="知识点掌握热力图">
+      <Card title="知识点掌握热力图" tag="热力图">
         {loading ? <p>加载中...</p> : null}
         {sortedHeatmap.length === 0 ? (
           <p>暂无练习数据。</p>
@@ -130,7 +138,7 @@ export default function TeacherAnalysisPage() {
         )}
       </Card>
 
-      <Card title="学情报告 + 重点提醒">
+      <Card title="学情报告 + 重点提醒" tag="报告">
         <div className="cta-row">
           <button className="button primary" onClick={generateReport} disabled={loading}>
             {loading ? "生成中..." : "生成学情报告"}

@@ -142,9 +142,26 @@ export default function PracticePage() {
     setChallengeCorrect(0);
   }
 
+  const modeLabel: Record<string, string> = {
+    normal: "普通练习",
+    challenge: "闯关模式",
+    timed: "限时模式",
+    wrong: "错题专练",
+    adaptive: "自适应推荐",
+    review: "记忆复习"
+  };
+
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="练习设置">
+      <div className="section-head">
+        <div>
+          <h2>智能练习</h2>
+          <div className="section-sub">个性化练习 + AI 讲解 + 变式训练。</div>
+        </div>
+        <span className="chip">{modeLabel[mode] ?? "练习模式"}</span>
+      </div>
+
+      <Card title="练习设置" tag="配置">
         <div className="grid grid-3" style={{ marginTop: 12 }}>
           <label>
             <div className="section-title">学科</div>
@@ -233,7 +250,7 @@ export default function PracticePage() {
       </Card>
 
       {question ? (
-        <Card title="题目">
+        <Card title="题目" tag="作答">
           <p>{question.stem}</p>
           <div className="grid" style={{ gap: 8, marginTop: 12 }}>
             {question.options.map((option) => (
@@ -261,7 +278,7 @@ export default function PracticePage() {
       ) : null}
 
       {result ? (
-        <Card title="解析">
+        <Card title="解析" tag="讲解">
           <div className="badge">{result.correct ? "回答正确" : "回答错误"}</div>
           <p style={{ marginTop: 8 }}>正确答案：{result.answer}</p>
           <p>{result.explanation}</p>
@@ -274,7 +291,7 @@ export default function PracticePage() {
       ) : null}
 
       {variantPack ? (
-        <Card title="错题讲解">
+        <Card title="错题讲解" tag="纠错">
           <p>{variantPack.analysis}</p>
           {variantPack.hints?.length ? (
             <div className="grid" style={{ gap: 6, marginTop: 10 }}>
@@ -288,7 +305,7 @@ export default function PracticePage() {
       ) : null}
 
       {variantPack?.variants?.length ? (
-        <Card title="变式训练">
+        <Card title="变式训练" tag="迁移">
           <div className="grid" style={{ gap: 12 }}>
             {variantPack.variants.map((variant, index) => {
               const selected = variantAnswers[index];
@@ -345,7 +362,7 @@ export default function PracticePage() {
       ) : null}
 
       {mode === "challenge" && challengeCount >= 5 ? (
-        <Card title="闯关结果">
+        <Card title="闯关结果" tag="成果">
           <p>本次闯关正确 {challengeCorrect} / 5</p>
           <button className="button secondary" onClick={resetChallenge}>
             再来一次

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/Card";
+import EduIcon from "@/components/EduIcon";
 
 type AssignmentDetail = {
   assignment: {
@@ -124,19 +125,46 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="作业信息">
-        <div className="section-title">{data.assignment.title}</div>
-        <p>
-          {data.class.name} · {subjectLabel[data.class.subject] ?? data.class.subject} · {data.class.grade} 年级
-        </p>
-        <p>截止日期：{new Date(data.assignment.dueDate).toLocaleDateString("zh-CN")}</p>
-        {data.assignment.description ? <p>说明：{data.assignment.description}</p> : null}
-        <Link className="button secondary" href="/student/assignments" style={{ marginTop: 12 }}>
+      <div className="section-head">
+        <div>
+          <h2>作业详情</h2>
+          <div className="section-sub">
+            {data.class.name} · {subjectLabel[data.class.subject] ?? data.class.subject} · {data.class.grade} 年级
+          </div>
+        </div>
+        <span className="chip">{alreadyCompleted ? "已完成" : "进行中"}</span>
+      </div>
+
+      <Card title="作业信息" tag="概览">
+        <div className="grid grid-2">
+          <div className="card feature-card">
+            <EduIcon name="board" />
+            <div className="section-title">{data.assignment.title}</div>
+            <p>{data.assignment.description || "暂无作业说明。"}</p>
+          </div>
+          <div className="card feature-card">
+            <EduIcon name="chart" />
+            <div className="section-title">截止日期</div>
+            <p>{new Date(data.assignment.dueDate).toLocaleDateString("zh-CN")}</p>
+            {data.progress?.status === "completed" ? (
+              <div className="pill-list">
+                <span className="pill">
+                  得分 {data.progress?.score ?? 0}/{data.progress?.total ?? 0}
+                </span>
+              </div>
+            ) : (
+              <div className="pill-list">
+                <span className="pill">等待提交</span>
+              </div>
+            )}
+          </div>
+        </div>
+        <Link className="button ghost" href="/student/assignments" style={{ marginTop: 12 }}>
           返回作业中心
         </Link>
       </Card>
 
-      <Card title="作业作答">
+      <Card title="作业作答" tag="作答">
         {alreadyCompleted ? (
           <p>已提交作业，如需再次练习可联系老师重新布置。</p>
         ) : (
@@ -173,20 +201,24 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
       </Card>
 
       {result ? (
-        <Card title="提交结果">
-          <p>
-            得分：{result.score}/{result.total}
-          </p>
+        <Card title="提交结果" tag="成绩">
+          <div className="pill-list">
+            <span className="pill">
+              得分 {result.score}/{result.total}
+            </span>
+          </div>
           <div className="grid" style={{ gap: 12, marginTop: 12 }}>
             {result.details.map((detail) => {
               const question = data.questions.find((item) => item.id === detail.questionId);
               return (
                 <div className="card" key={detail.questionId}>
                   <div className="section-title">{question?.stem ?? "题目"}</div>
-                  <p>你的答案：{detail.answer || "未作答"}</p>
-                  <p>正确答案：{detail.correctAnswer}</p>
-                  <p>结果：{detail.correct ? "正确" : "错误"}</p>
-                  <p>解析：{detail.explanation}</p>
+                  <div className="pill-list" style={{ marginTop: 8 }}>
+                    <span className="pill">你的答案：{detail.answer || "未作答"}</span>
+                    <span className="pill">正确答案：{detail.correctAnswer}</span>
+                    <span className="pill">{detail.correct ? "回答正确" : "回答错误"}</span>
+                  </div>
+                  <p style={{ marginTop: 8 }}>解析：{detail.explanation}</p>
                 </div>
               );
             })}
@@ -195,7 +227,7 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
       ) : null}
 
       {review?.review ? (
-        <Card title="老师点评">
+        <Card title="老师点评" tag="点评">
           <p>{review.review.overallComment || "暂无总体点评"}</p>
           <div className="grid" style={{ gap: 12, marginTop: 12 }}>
             {(review.reviewItems ?? []).map((item: any) => {
@@ -203,8 +235,10 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
               return (
                 <div className="card" key={item.questionId}>
                   <div className="section-title">{question?.stem ?? "题目"}</div>
-                  <p>错因标签：{item.wrongTag || "未标注"}</p>
-                  <p>点评：{item.comment || "暂无"}</p>
+                  <div className="pill-list" style={{ marginTop: 8 }}>
+                    <span className="pill">错因标签：{item.wrongTag || "未标注"}</span>
+                  </div>
+                  <p style={{ marginTop: 8 }}>点评：{item.comment || "暂无"}</p>
                 </div>
               );
             })}
@@ -213,16 +247,18 @@ export default function StudentAssignmentDetailPage({ params }: { params: { id: 
       ) : null}
 
       {review?.questions ? (
-        <Card title="错题复盘">
+        <Card title="错题复盘" tag="复盘">
           <div className="grid" style={{ gap: 12 }}>
             {review.questions
               .filter((item: any) => !item.correct)
               .map((item: any) => (
                 <div className="card" key={item.id}>
                   <div className="section-title">{item.stem}</div>
-                  <p>你的答案：{item.answer || "未作答"}</p>
-                  <p>正确答案：{item.correctAnswer}</p>
-                  <p>解析：{item.explanation}</p>
+                  <div className="pill-list" style={{ marginTop: 8 }}>
+                    <span className="pill">你的答案：{item.answer || "未作答"}</span>
+                    <span className="pill">正确答案：{item.correctAnswer}</span>
+                  </div>
+                  <p style={{ marginTop: 8 }}>解析：{item.explanation}</p>
                 </div>
               ))}
           </div>

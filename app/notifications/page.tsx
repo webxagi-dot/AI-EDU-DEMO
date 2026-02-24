@@ -46,7 +46,15 @@ export default function NotificationsPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="通知中心">
+      <div className="section-head">
+        <div>
+          <h2>通知中心</h2>
+          <div className="section-sub">作业、班级与学习提醒。</div>
+        </div>
+        <span className="chip">提醒</span>
+      </div>
+
+      <Card title="通知中心" tag="消息">
         {list.length === 0 ? (
           <p>暂无通知。</p>
         ) : (

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Card from "@/components/Card";
+import EduIcon from "@/components/EduIcon";
 
 type CoachResponse = {
   answer: string;
@@ -54,7 +55,19 @@ export default function CoachPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="学习陪练模式">
+      <div className="section-head">
+        <div>
+          <h2>学习陪练</h2>
+          <div className="section-sub">分步提示、卡点追问与思路反馈。</div>
+        </div>
+        <span className="chip">AI 陪练</span>
+      </div>
+
+      <Card title="学习陪练模式" tag="输入">
+        <div className="feature-card">
+          <EduIcon name="brain" />
+          <p>输入题目与思路，获得逐步引导。</p>
+        </div>
         <div className="grid grid-3">
           <label>
             <div className="section-title">学科</div>
@@ -114,7 +127,11 @@ export default function CoachPage() {
       </Card>
 
       {data ? (
-        <Card title="陪练指引">
+        <Card title="陪练指引" tag="反馈">
+          <div className="feature-card">
+            <EduIcon name="board" />
+            <p>分步提示、追问与思路校准。</p>
+          </div>
           <p>{data.answer}</p>
           {data.feedback ? <div style={{ marginTop: 10 }}>{data.feedback}</div> : null}
           <div className="grid" style={{ gap: 8, marginTop: 12 }}>

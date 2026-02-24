@@ -1,33 +1,63 @@
-import Card from "@/components/Card";
 import Link from "next/link";
+import Card from "@/components/Card";
+import EduIcon from "@/components/EduIcon";
 
 export default function AdminPage() {
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="题库管理">
-        <p>维护题库、解析与难度标签。</p>
-        <Link className="button secondary" href="/admin/questions" style={{ marginTop: 12 }}>
-          进入题库
-        </Link>
-      </Card>
-      <Card title="知识点树">
-        <p>人教版小学：学科 → 年级 → 单元 → 知识点。</p>
-        <Link className="button secondary" href="/admin/knowledge-points" style={{ marginTop: 12 }}>
-          管理知识点
-        </Link>
-        <Link className="button secondary" href="/admin/knowledge-tree" style={{ marginTop: 12 }}>
-          查看知识点树
-        </Link>
-      </Card>
-      <Card title="学生概览">
-        <p>本周活跃 128 人，完成诊断 72 人。</p>
-      </Card>
-      <Card title="操作日志">
-        <p>查看管理员操作记录与关键变更。</p>
-        <Link className="button secondary" href="/admin/logs" style={{ marginTop: 12 }}>
-          查看日志
-        </Link>
-      </Card>
+      <div className="section-head">
+        <div>
+          <h2>管理控制台</h2>
+          <div className="section-sub">题库、知识点树与平台运营总览。</div>
+        </div>
+        <span className="chip">管理端</span>
+      </div>
+
+      <div className="grid grid-2">
+        <Card title="题库管理" tag="题库">
+          <div className="feature-card">
+            <EduIcon name="pencil" />
+            <p>维护题库、解析与难度标签。</p>
+          </div>
+          <Link className="button secondary" href="/admin/questions" style={{ marginTop: 12 }}>
+            进入题库
+          </Link>
+        </Card>
+        <Card title="知识点树" tag="大纲">
+          <div className="feature-card">
+            <EduIcon name="book" />
+            <p>人教版小学：学科 → 年级 → 单元 → 知识点。</p>
+          </div>
+          <div className="cta-row">
+            <Link className="button secondary" href="/admin/knowledge-points">
+              管理知识点
+            </Link>
+            <Link className="button ghost" href="/admin/knowledge-tree">
+              查看知识点树
+            </Link>
+          </div>
+        </Card>
+        <Card title="学生概览" tag="运营">
+          <div className="feature-card">
+            <EduIcon name="chart" />
+            <p>本周活跃 128 人，完成诊断 72 人。</p>
+          </div>
+          <div className="pill-list" style={{ marginTop: 12 }}>
+            <span className="pill">活跃趋势</span>
+            <span className="pill">留存分析</span>
+            <span className="pill">转化漏斗</span>
+          </div>
+        </Card>
+        <Card title="操作日志" tag="安全">
+          <div className="feature-card">
+            <EduIcon name="board" />
+            <p>查看管理员操作记录与关键变更。</p>
+          </div>
+          <Link className="button secondary" href="/admin/logs" style={{ marginTop: 12 }}>
+            查看日志
+          </Link>
+        </Card>
+      </div>
     </div>
   );
 }

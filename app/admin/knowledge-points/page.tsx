@@ -216,7 +216,15 @@ export default function KnowledgePointsAdminPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="批量生成全学科/全年级（预览后确认）">
+      <div className="section-head">
+        <div>
+          <h2>知识点管理</h2>
+          <div className="section-sub">批量生成、AI 生成与知识点维护。</div>
+        </div>
+        <span className="chip">管理端</span>
+      </div>
+
+      <Card title="批量生成全学科/全年级（预览后确认）" tag="批量">
         <p style={{ color: "var(--ink-1)", fontSize: 13 }}>
           先生成预览，再确认入库。支持控制单元/章节/知识点数量模板。
         </p>
@@ -381,7 +389,7 @@ export default function KnowledgePointsAdminPage() {
           </div>
         ) : null}
       </Card>
-      <Card title="AI 生成知识点树（整本书）">
+      <Card title="AI 生成知识点树（整本书）" tag="树形">
         <p style={{ color: "var(--ink-1)", fontSize: 13 }}>
           按“单元 → 章节 → 知识点”生成整本书结构（建议先执行该功能）。
         </p>
@@ -450,7 +458,7 @@ export default function KnowledgePointsAdminPage() {
           </div>
         ) : null}
       </Card>
-      <Card title="AI 生成知识点">
+      <Card title="AI 生成知识点" tag="AI">
         <p style={{ color: "var(--ink-1)", fontSize: 13 }}>
           需要配置 LLM（如智谱），系统会按学科/年级生成知识点。
         </p>
@@ -514,7 +522,7 @@ export default function KnowledgePointsAdminPage() {
           </div>
         ) : null}
       </Card>
-      <Card title="新增知识点">
+      <Card title="新增知识点" tag="新增">
         <form onSubmit={handleCreate} style={{ display: "grid", gap: 12 }}>
           <label>
             <div className="section-title">学科</div>
@@ -567,7 +575,7 @@ export default function KnowledgePointsAdminPage() {
         </form>
       </Card>
 
-      <Card title="知识点列表">
+      <Card title="知识点列表" tag="列表">
         {loading ? <p>加载中...</p> : null}
         <div className="grid" style={{ gap: 8 }}>
           {list.map((item) => (

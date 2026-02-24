@@ -39,7 +39,15 @@ export default function KnowledgeTreePage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="知识点树（可视化）">
+      <div className="section-head">
+        <div>
+          <h2>知识点树可视化</h2>
+          <div className="section-sub">按单元与章节查看知识点结构。</div>
+        </div>
+        <span className="chip">管理端</span>
+      </div>
+
+      <Card title="知识点树（可视化）" tag="结构">
         {Object.keys(tree).length === 0 ? <p>暂无知识点。</p> : null}
         <div className="grid" style={{ gap: 12, marginTop: 12 }}>
           {Object.entries(tree).map(([subject, gradeMap]) => (

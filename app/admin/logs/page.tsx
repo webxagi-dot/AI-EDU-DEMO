@@ -24,7 +24,15 @@ export default function AdminLogsPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="操作日志">
+      <div className="section-head">
+        <div>
+          <h2>管理操作日志</h2>
+          <div className="section-sub">记录管理端关键操作。</div>
+        </div>
+        <span className="chip">安全</span>
+      </div>
+
+      <Card title="操作日志" tag="审计">
         {logs.length === 0 ? <p>暂无日志。</p> : null}
         <div className="grid" style={{ gap: 10 }}>
           {logs.map((log) => (

@@ -36,8 +36,15 @@ export default function TeacherRegisterPage() {
   }
 
   return (
-    <div className="grid" style={{ gap: 18, maxWidth: 480 }}>
-      <Card title="教师注册">
+    <div className="grid" style={{ gap: 18, maxWidth: 560 }}>
+      <div className="section-head">
+        <div>
+          <h2>教师注册</h2>
+          <div className="section-sub">开启AI教研与班级管理功能。</div>
+        </div>
+        <span className="chip">教师端</span>
+      </div>
+      <Card title="教师注册" tag="入驻">
         <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12 }}>
           <label>
             <div className="section-title">姓名</div>
@@ -83,6 +90,11 @@ export default function TeacherRegisterPage() {
         </form>
         <div style={{ marginTop: 12, fontSize: 12, color: "var(--ink-1)" }}>
           若已配置 TEACHER_INVITE_CODE，需要输入邀请码；否则仅当系统还没有教师时允许注册。
+        </div>
+        <div className="pill-list" style={{ marginTop: 10 }}>
+          <span className="pill">AI 组卷</span>
+          <span className="pill">班级学情</span>
+          <span className="pill">作业批改</span>
         </div>
       </Card>
     </div>

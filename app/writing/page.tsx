@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Card from "@/components/Card";
+import EduIcon from "@/components/EduIcon";
 
 type WritingFeedback = {
   scores: { structure: number; grammar: number; vocab: number };
@@ -55,7 +56,19 @@ export default function WritingPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="作文 / 英语写作批改">
+      <div className="section-head">
+        <div>
+          <h2>写作批改</h2>
+          <div className="section-sub">结构、语法、词汇多维度评分与润色建议。</div>
+        </div>
+        <span className="chip">AI 批改</span>
+      </div>
+
+      <Card title="作文 / 英语写作批改" tag="提交">
+        <div className="feature-card">
+          <EduIcon name="pencil" />
+          <p>支持语文作文与英语写作批改。</p>
+        </div>
         <div className="grid grid-3">
           <label>
             <div className="section-title">学科</div>
@@ -109,7 +122,11 @@ export default function WritingPage() {
       </Card>
 
       {result ? (
-        <Card title="批改结果">
+        <Card title="批改结果" tag="反馈">
+          <div className="feature-card">
+            <EduIcon name="chart" />
+            <p>生成多维评分与优化建议。</p>
+          </div>
           <div className="grid grid-3">
             <div className="card">
               <div className="section-title">结构</div>
@@ -146,7 +163,7 @@ export default function WritingPage() {
         </Card>
       ) : null}
 
-      <Card title="历史批改">
+      <Card title="历史批改" tag="记录">
         <div className="grid" style={{ gap: 10 }}>
           {history.length === 0 ? <p>暂无历史记录。</p> : null}
           {history.slice(0, 6).map((item) => (

@@ -116,7 +116,15 @@ export default function WrongBookPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="订正任务">
+      <div className="section-head">
+        <div>
+          <h2>错题与订正</h2>
+          <div className="section-sub">错题复盘 + 订正计划。</div>
+        </div>
+        <span className="chip">错题管理</span>
+      </div>
+
+      <Card title="订正任务" tag="订正">
         <div className="grid grid-2">
           <div className="card">
             <div className="section-title">待订正</div>
@@ -159,7 +167,7 @@ export default function WrongBookPage() {
         </div>
       </Card>
 
-      <Card title="从错题生成订正任务">
+      <Card title="从错题生成订正任务" tag="生成">
         <div style={{ display: "grid", gap: 12 }}>
           <label>
             <div className="section-title">截止日期</div>
@@ -203,7 +211,7 @@ export default function WrongBookPage() {
         </div>
       </Card>
 
-      <Card title="错题本">
+      <Card title="错题本" tag="复盘">
         <div className="grid" style={{ gap: 12 }}>
           {list.length === 0 ? <p>暂无错题，继续保持！</p> : null}
           {list.map((item) => (

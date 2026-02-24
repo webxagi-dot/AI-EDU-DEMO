@@ -370,7 +370,15 @@ export default function QuestionsAdminPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="批量导入题库（CSV）">
+      <div className="section-head">
+        <div>
+          <h2>题库管理</h2>
+          <div className="section-sub">CSV 导入、AI 出题与题库维护。</div>
+        </div>
+        <span className="chip">管理端</span>
+      </div>
+
+      <Card title="批量导入题库（CSV）" tag="导入">
         <p style={{ color: "var(--ink-1)", fontSize: 13 }}>
           支持 CSV 导入。若是 Excel，请先另存为 CSV。
         </p>
@@ -397,7 +405,7 @@ export default function QuestionsAdminPage() {
           </div>
         ) : null}
       </Card>
-      <Card title="AI 生成题目">
+      <Card title="AI 生成题目" tag="AI">
         <p style={{ color: "var(--ink-1)", fontSize: 13 }}>
           需要配置 LLM（如智谱），系统会按知识点自动生成选择题。
         </p>
@@ -503,7 +511,7 @@ export default function QuestionsAdminPage() {
           </div>
         ) : null}
       </Card>
-      <Card title="新增题目">
+      <Card title="新增题目" tag="新增">
         <form onSubmit={handleCreate} style={{ display: "grid", gap: 12 }}>
           <label>
             <div className="section-title">学科</div>
@@ -622,7 +630,7 @@ export default function QuestionsAdminPage() {
         </form>
       </Card>
 
-      <Card title="题目列表">
+      <Card title="题目列表" tag="列表">
         {loading ? <p>加载中...</p> : null}
         <div className="grid" style={{ gap: 8 }}>
           {list.map((item) => (

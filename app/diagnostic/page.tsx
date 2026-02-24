@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/Card";
+import EduIcon from "@/components/EduIcon";
 import { toPng } from "html-to-image";
 
 type Question = {
@@ -84,7 +85,19 @@ export default function DiagnosticPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="诊断测评">
+      <div className="section-head">
+        <div>
+          <h2>诊断测评</h2>
+          <div className="section-sub">快速定位知识点薄弱项，生成学习计划。</div>
+        </div>
+        <span className="chip">学习体检</span>
+      </div>
+
+      <Card title="诊断测评" tag="测评">
+        <div className="feature-card">
+          <EduIcon name="book" />
+          <p>选择学科与年级，开始 AI 诊断测评。</p>
+        </div>
         <div className="grid grid-2" style={{ marginTop: 12 }}>
           <label>
             <div className="section-title">学科</div>
@@ -120,7 +133,12 @@ export default function DiagnosticPage() {
       </Card>
 
       {current ? (
-        <Card title={`第 ${index + 1} 题`}> 
+        <Card title={`第 ${index + 1} 题`} tag="答题">
+          <div className="pill-list" style={{ marginBottom: 10 }}>
+            <span className="pill">进度 {index + 1}/{questions.length}</span>
+            <span className="pill">学科 {subject === "math" ? "数学" : subject === "chinese" ? "语文" : "英语"}</span>
+            <span className="pill">年级 {grade}</span>
+          </div>
           <p>{current.stem}</p>
           <div className="grid" style={{ gap: 8, marginTop: 12 }}>
             {current.options.map((option) => (
@@ -174,7 +192,11 @@ export default function DiagnosticPage() {
       ) : null}
 
       {result ? (
-        <Card title="诊断结果">
+        <Card title="诊断结果" tag="报告">
+          <div className="feature-card">
+            <EduIcon name="chart" />
+            <p>生成掌握度分布与错因总结。</p>
+          </div>
           <div ref={reportRef}>
             <p>
               正确 {result.correct} / {result.total}，正确率 {result.accuracy}%。

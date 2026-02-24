@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Card from "@/components/Card";
+import EduIcon from "@/components/EduIcon";
 
 function normalizeText(text: string) {
   return text
@@ -95,7 +96,19 @@ export default function ReadingPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="朗读跟读评分">
+      <div className="section-head">
+        <div>
+          <h2>朗读跟读评分</h2>
+          <div className="section-sub">口语表达、发音清晰度与语感训练。</div>
+        </div>
+        <span className="chip">语音训练</span>
+      </div>
+
+      <Card title="朗读跟读评分" tag="录音">
+        <div className="feature-card">
+          <EduIcon name="book" />
+          <p>选择科目，开始朗读或跟读。</p>
+        </div>
         <div className="grid grid-2">
           <label>
             <div className="section-title">科目</div>
@@ -130,7 +143,11 @@ export default function ReadingPage() {
         </div>
       </Card>
 
-      <Card title="跟读结果">
+      <Card title="跟读结果" tag="评分">
+        <div className="feature-card">
+          <EduIcon name="chart" />
+          <p>自动识别文本并给出分数。</p>
+        </div>
         <label>
           <div className="section-title">识别文本</div>
           <textarea

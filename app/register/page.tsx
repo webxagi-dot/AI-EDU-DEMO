@@ -44,8 +44,15 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="grid" style={{ gap: 18, maxWidth: 520 }}>
-      <Card title="注册">
+    <div className="grid" style={{ gap: 18, maxWidth: 560 }}>
+      <div className="section-head">
+        <div>
+          <h2>账号注册</h2>
+          <div className="section-sub">创建学生或家长账号，进入学习空间。</div>
+        </div>
+        <span className="chip">学生/家长</span>
+      </div>
+      <Card title="注册" tag="账户">
         <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12 }}>
           <label>
             <div className="section-title">角色</div>
@@ -120,6 +127,11 @@ export default function RegisterPage() {
         </form>
         <div style={{ marginTop: 12, fontSize: 13, color: "var(--ink-1)" }}>
           已有账号？<Link href="/login">去登录</Link>
+        </div>
+        <div className="pill-list" style={{ marginTop: 10 }}>
+          <span className="pill">支持人教版小学</span>
+          <span className="pill">多学科同步</span>
+          <span className="pill">家校协同</span>
         </div>
       </Card>
     </div>

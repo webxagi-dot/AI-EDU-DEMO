@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Card from "@/components/Card";
 import Stat from "@/components/Stat";
+import EduIcon from "@/components/EduIcon";
 
 export default function ParentPage() {
   const [report, setReport] = useState<any>(null);
@@ -58,7 +59,19 @@ export default function ParentPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="家长周报">
+      <div className="section-head">
+        <div>
+          <h2>家长空间</h2>
+          <div className="section-sub">掌握学情、作业进度与订正提醒。</div>
+        </div>
+        <span className="chip">家校协作</span>
+      </div>
+
+      <Card title="家长周报" tag="学情">
+        <div className="feature-card">
+          <EduIcon name="chart" />
+          <p>近 7 天学习概览与环比变化。</p>
+        </div>
         <div className="grid grid-2">
           <Stat label="完成题量" value={`${report.stats.total} 题`} helper="近 7 天" />
           <Stat label="正确率" value={`${report.stats.accuracy}%`} helper="近 7 天" />
@@ -74,7 +87,11 @@ export default function ParentPage() {
           </div>
         </div>
       </Card>
-      <Card title="薄弱点与建议">
+      <Card title="薄弱点与建议" tag="诊断">
+        <div className="feature-card">
+          <EduIcon name="brain" />
+          <p>识别薄弱知识点，给出本周提升建议。</p>
+        </div>
         <div className="grid" style={{ gap: 8 }}>
           {report.weakPoints?.length ? (
             report.weakPoints.map((item: any) => (
@@ -99,7 +116,11 @@ export default function ParentPage() {
           </div>
         ) : null}
       </Card>
-      <Card title="订正任务提醒">
+      <Card title="订正任务提醒" tag="督学">
+        <div className="feature-card">
+          <EduIcon name="pencil" />
+          <p>自动生成订正清单与提醒文案。</p>
+        </div>
         <div className="grid grid-2">
           <div className="card">
             <div className="section-title">待订正</div>
@@ -140,7 +161,11 @@ export default function ParentPage() {
           </button>
         </div>
       </Card>
-      <Card title="作业提醒">
+      <Card title="作业提醒" tag="作业">
+        <div className="feature-card">
+          <EduIcon name="board" />
+          <p>汇总老师布置作业与到期提醒。</p>
+        </div>
         <div className="grid grid-2">
           <div className="card">
             <div className="section-title">待完成</div>

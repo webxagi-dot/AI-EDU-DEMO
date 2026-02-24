@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Card from "@/components/Card";
+import EduIcon from "@/components/EduIcon";
 
 const subjectLabel: Record<string, string> = {
   math: "数学",
@@ -38,7 +39,19 @@ export default function StudentGrowthPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="学习路径总览">
+      <div className="section-head">
+        <div>
+          <h2>成长档案</h2>
+          <div className="section-sub">学习轨迹、学科掌握度与薄弱点。</div>
+        </div>
+        <span className="chip">成长分析</span>
+      </div>
+
+      <Card title="学习路径总览" tag="总览">
+        <div className="feature-card">
+          <EduIcon name="chart" />
+          <p>练习量、正确率与近 7 天表现。</p>
+        </div>
         <div className="grid grid-3">
           <div className="card">
             <div className="section-title">总练习题量</div>
@@ -65,7 +78,7 @@ export default function StudentGrowthPage() {
         </div>
       </Card>
 
-      <Card title="学科掌握度">
+      <Card title="学科掌握度" tag="学科">
         {data.subjects?.length ? (
           <div className="grid" style={{ gap: 12 }}>
             {data.subjects.map((item: any) => (
@@ -81,7 +94,7 @@ export default function StudentGrowthPage() {
         )}
       </Card>
 
-      <Card title="薄弱知识点">
+      <Card title="薄弱知识点" tag="薄弱">
         {data.weakPoints?.length ? (
           <div className="grid" style={{ gap: 12 }}>
             {data.weakPoints.map((item: any) => (

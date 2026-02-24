@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Card from "@/components/Card";
+import EduIcon from "@/components/EduIcon";
 
 type AbilityStat = {
   id: string;
@@ -55,7 +56,19 @@ export default function PortraitPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <Card title="学习画像 / 能力雷达">
+      <div className="section-head">
+        <div>
+          <h2>学习画像</h2>
+          <div className="section-sub">多维能力雷达与学科表现。</div>
+        </div>
+        <span className="chip">能力画像</span>
+      </div>
+
+      <Card title="学习画像 / 能力雷达" tag="雷达">
+        <div className="feature-card">
+          <EduIcon name="chart" />
+          <p>展示算数、阅读、逻辑等能力分布。</p>
+        </div>
         {normalized.length ? (
           <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 24, alignItems: "center" }}>
             <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
