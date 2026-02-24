@@ -221,6 +221,33 @@ a {
   align-items: center;
 }
 
+.hero-stage {
+  position: relative;
+  padding: 26px;
+  border-radius: 28px;
+  background: linear-gradient(130deg, rgba(255, 255, 255, 0.78), rgba(244, 208, 111, 0.16));
+  border: 1px solid rgba(25, 22, 18, 0.08);
+  overflow: hidden;
+}
+
+.hero-stage::before {
+  content: "";
+  position: absolute;
+  inset: -40px;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22900%22%20height%3D%22500%22%20viewBox%3D%220%200%20900%20500%22%3E%0A%20%20%3Cg%20fill%3D%22none%22%20stroke%3D%22%231b6ca8%22%20stroke-width%3D%221.4%22%20opacity%3D%220.35%22%3E%0A%20%20%20%20%3Crect%20x%3D%2260%22%20y%3D%2270%22%20width%3D%22120%22%20height%3D%22160%22%20rx%3D%2212%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M90%2070v160%22%2F%3E%0A%20%20%20%20%3Crect%20x%3D%22220%22%20y%3D%2290%22%20width%3D%22120%22%20height%3D%22160%22%20rx%3D%2212%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M250%2090v160%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M420%2090l120-40%2028%2060-120%2040z%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M424%20112l120-40%22%2F%3E%0A%20%20%20%20%3Crect%20x%3D%22620%22%20y%3D%2280%22%20width%3D%22160%22%20height%3D%2232%22%20rx%3D%228%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M630%2096h140%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M640%2088v16%20M660%2088v16%20M680%2088v16%20M700%2088v16%20M720%2088v16%20M740%2088v16%22%2F%3E%0A%20%20%20%20%3Ccircle%20cx%3D%22720%22%20cy%3D%22240%22%20r%3D%2256%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M700%20240h40%20M720%20220v40%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%20%20%3Cg%20fill%3D%22%23d36b3f%22%20opacity%3D%220.18%22%3E%0A%20%20%20%20%3Ccircle%20cx%3D%22200%22%20cy%3D%22330%22%20r%3D%2270%22%2F%3E%0A%20%20%20%20%3Ccircle%20cx%3D%22520%22%20cy%3D%22320%22%20r%3D%2290%22%2F%3E%0A%20%20%20%20%3Ccircle%20cx%3D%22760%22%20cy%3D%22360%22%20r%3D%2260%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%20%20%3Cg%20fill%3D%22none%22%20stroke%3D%22%237db9b6%22%20stroke-width%3D%221.2%22%20opacity%3D%220.35%22%3E%0A%20%20%20%20%3Cpath%20d%3D%22M120%20360h120%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M120%20360l20-24%2020%2024%2020-24%2020%2024%2020-24%2020%2024%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M420%20360h160%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M420%20360l20-24%2020%2024%2020-24%2020%2024%2020-24%2020%2024%2020-24%2020%2024%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%20%20%3Cg%20fill%3D%22%231d1b16%22%20opacity%3D%220.25%22%20font-size%3D%2222%22%20font-family%3D%22Courier%20New%2C%20monospace%22%3E%0A%20%20%20%20%3Ctext%20x%3D%2290%22%20y%3D%22270%22%3Ea%5E2%20%2B%20b%5E2%20%3D%20c%5E2%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D%2290%22%20y%3D%22300%22%3ES%20%3D%20(a%20%2B%20b)%20*%20h%20%2F%202%3C%2Ftext%3E%0A%20%20%20%20%3Ctext%20x%3D%2290%22%20y%3D%22330%22%3E1%2F2%20%2B%201%2F3%20%3D%205%2F6%3C%2Ftext%3E%0A%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.25;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-stage > * {
+  position: relative;
+  z-index: 1;
+}
+
 .hero h1 {
   font-size: clamp(28px, 3vw, 42px);
   margin: 0 0 8px;
@@ -409,6 +436,16 @@ textarea:focus {
   margin: 0;
   padding-left: 18px;
   line-height: 1.6;
+}
+
+.hero-visual .chalk-math {
+  margin-top: 12px;
+  display: grid;
+  gap: 4px;
+  font-family: "Courier New", monospace;
+  font-size: 14px;
+  color: rgba(230, 240, 246, 0.85);
+  letter-spacing: 0.3px;
 }
 
 .hero-visual .sticky-note {

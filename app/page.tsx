@@ -6,7 +6,7 @@ import EduIcon from "@/components/EduIcon";
 export default function Home() {
   return (
     <div className="grid" style={{ gap: 28 }}>
-      <section className="hero">
+      <section className="hero hero-stage">
         <div>
           <div className="badge">航科AI教育 · 小学课后辅导</div>
           <h1>让孩子学得更有趣，学得更扎实</h1>
@@ -31,6 +31,11 @@ export default function Home() {
               <li>读写分数练习</li>
               <li>错题归因与讲评</li>
             </ul>
+            <div className="chalk-math">
+              <div>a^2 + b^2 = c^2</div>
+              <div>1/2 + 1/3 = 5/6</div>
+              <div>S = (a + b) * h / 2</div>
+            </div>
           </div>
           <div className="note-row">
             <div className="sticky-note">
